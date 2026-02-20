@@ -1,15 +1,27 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import type { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createLeagueWithDefaults, joinLeagueByInviteCode } from "@/lib/league";
 import SignOutButton from "@/components/sign-out-button";
 
-type MembershipWithLeagueTeam = Prisma.MembershipGetPayload<{
-  include: { league: true; team: true };
-}>;
+type MembershipWithLeagueTeam = {
+  id: string;
+  leagueId: string;
+  role: "admin" | "member";
+  teamId: string | null;
+  league: {
+    id: string;
+    name: string;
+    inviteCode: string;
+  };
+  team: {
+    id: string;
+    slotNumber: number;
+    name: string;
+  } | null;
+};
 
 async function requireSessionUser() {
   const session = await getServerSession(authOptions);
@@ -32,14 +44,14 @@ export default async function LeaguesPage({
   const user = await requireSessionUser();
   const qp = (await searchParams) || {};
 
-  const memberships: MembershipWithLeagueTeam[] = await prisma.membership.findMany({
+  const memberships = (await prisma.membership.findMany({
     where: { userId: user.id },
     include: {
       league: true,
       team: true,
     },
     orderBy: { createdAt: "desc" },
-  });
+  })) as MembershipWithLeagueTeam[];
 
   async function createLeagueAction(formData: FormData) {
     "use server";
