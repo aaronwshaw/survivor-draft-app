@@ -15,9 +15,20 @@ export default function Home() {
 
       <main className="app-shell">
         <section id="loginView" className="page-view" aria-labelledby="loginTitle">
-          <h2 id="loginTitle">Login</h2>
-          <p className="muted">Use email to sign in or create an account.</p>
-          <form id="authForm" className="card form-grid">
+          <img className="landing-top-banner" src="/photos/50logo.png" alt="Survivor 50 banner" />
+          <div className="landing-hero card">
+            <h2 id="loginTitle">Welcome to the Survivor Fantasy Draft</h2>
+            <p className="muted">Build your team, manage your league, and track eliminations all season.</p>
+            <div className="landing-options">
+              <button id="landingLoginOption" type="button">
+                Login
+              </button>
+              <button id="landingCreateOption" type="button" className="secondary">
+                Create Account
+              </button>
+            </div>
+          </div>
+          <form id="authForm" className="card form-grid landing-auth-form">
             <label>
               Email
               <input id="authEmail" type="email" required placeholder="you@example.com" />
@@ -36,6 +47,7 @@ export default function Home() {
             </div>
           </form>
           <p id="loginMessage" className="message" />
+          <img className="landing-cast" src="/photos/50cast.png" alt="Survivor 50 cast" />
         </section>
 
         <section id="leaguesView" className="page-view view-hidden" aria-labelledby="leaguesTitle">
@@ -147,6 +159,7 @@ export default function Home() {
           </section>
         </section>
       </main>
+      <footer className="app-footer">Created by Aaron Shaw</footer>
 
       <div id="assignModal" className="modal hidden" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
         <div className="modal-card">

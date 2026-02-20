@@ -51,6 +51,8 @@ const ui = {
   authForm: document.getElementById("authForm"),
   authEmail: document.getElementById("authEmail"),
   authDisplayName: document.getElementById("authDisplayName"),
+  landingLoginOption: document.getElementById("landingLoginOption"),
+  landingCreateOption: document.getElementById("landingCreateOption"),
   signUpButton: document.getElementById("signUpButton"),
   leaguesList: document.getElementById("leaguesList"),
   createLeagueForm: document.getElementById("createLeagueForm"),
@@ -776,6 +778,13 @@ function wire() {
   ui.signUpButton.addEventListener("click", () => {
     try { signUp(ui.authEmail.value, ui.authDisplayName.value); msg("", ""); go("#/leagues"); }
     catch (err) { msg("login", err.message); render(); }
+  });
+  ui.landingLoginOption.addEventListener("click", () => {
+    ui.authEmail.focus();
+  });
+  ui.landingCreateOption.addEventListener("click", () => {
+    ui.authEmail.focus();
+    ui.authDisplayName.focus();
   });
   ui.logoutButton.addEventListener("click", () => { signOut(); msg("", ""); go("#/login"); });
 

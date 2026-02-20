@@ -15,11 +15,11 @@
 - [x] Add backend route with admin authorization check.
 
 ## 3. Landing Page Redesign
-- [ ] Add logo image to top of landing page (from /public folder).
-- [ ] Add banner: "Welcome to the Survivor Fantasy Draft".
-- [ ] Create two centered options: Login and Create Account.
-- [ ] Add cast image to bottom of landing page (from /public folder).
-- [ ] Ensure layout is responsive and centered.
+- [x] Add logo image to top of landing page (from /public folder).
+- [x] Add banner: "Welcome to the Survivor Fantasy Draft".
+- [x] Create two centered options: Login and Create Account.
+- [x] Add cast image to bottom of landing page (from /public folder).
+- [x] Ensure layout is responsive and centered.
 
 ## 4. Authentication Forms
 - [ ] Login form requires: Username and Password.
