@@ -2,15 +2,15 @@
 
 ## 0) Target Architecture
 - [x] Framework: Next.js (App Router)
-- [ ] Database: Neon Postgres (schema ready; live Neon URL still needed)
+- [x] Database: Neon Postgres (connected)
 - [x] ORM: Prisma (installed/configured)
-- [x] Auth: NextAuth.js skeleton
+- [x] Auth: NextAuth.js (credentials flow wired)
 - [ ] Deployment: Vercel + env vars
 
 ## 1) Pre-flight Checklist
 - [x] Node/npm verified (`node v23.0.0`, `npm 10.9.0`)
 - [x] Repo on GitHub (assumed from prior context)
-- [ ] Neon project confirmed in this repo config (pending real env values)
+- [x] Neon project confirmed in this repo config
 - [x] Legacy static app preserved under `/legacy`
 - [x] Replace static root with Next.js app
 
@@ -38,7 +38,7 @@
 - [x] Added `DIRECT_URL` support to datasource
 - [x] `npx prisma validate` passes
 - [x] `npx prisma generate` passes
-- [ ] `npx prisma migrate dev --name init` (blocked pending real DB connection string)
+- [x] `npx prisma migrate dev --name init` (schema synced; no pending changes)
 - [ ] `npx prisma studio` with real database
 
 ## 5) Auth (NextAuth) Setup
@@ -46,16 +46,17 @@
 - [x] Added route: `src/app/api/auth/[...nextauth]/route.ts`
 - [x] Added auth options: `src/lib/auth.ts`
 - [x] Added Prisma client helper: `src/lib/prisma.ts`
-- [ ] Switched UI flows from localStorage auth to NextAuth session
-- [ ] Server-side route protection using session checks
+- [x] Switched `/login` flow to NextAuth session
+- [x] Server-side route protection using session checks (`/leagues`, `/league/[leagueId]`)
 
 ## 6) Required Pages
 - [x] Existing UI migrated into Next root page (`src/app/page.tsx`)
-- [ ] Proper App Router pages split by path:
+- [x] Proper App Router pages split by path:
   - `/login`
   - `/leagues`
   - `/league/[leagueId]`
 - [ ] Server-backed mutations for create/join/assign/reset
+: `create/join` done; `assign/reset` still pending migration from legacy script.
 
 ## 7) Player Data Strategy
 - [x] Option A in progress: keep players JSON in repo
@@ -68,13 +69,13 @@
 - [x] `.env*` ignored by git
 - [x] Permission logic exists in client migration script
 - [ ] Move permission enforcement fully server-side with DB mutations
-- [ ] Add DB transactions for team-claim race conditions
+- [x] Add DB transactions for team-claim race conditions (join flow uses transaction + conditional claim)
 
 ## 10) Definition of Done
 - [ ] Fully complete
 
 ## Immediate Next Actions
-1. Add real Neon `DATABASE_URL` + `DIRECT_URL` in `.env`.
-2. Run `npx prisma migrate dev --name init`.
-3. Split current single-page hash UI into real Next routes.
-4. Replace localStorage auth and league state with NextAuth + Prisma queries/mutations.
+1. Migrate draft assignments/reset/elimination from `public/legacy-app.js` into server actions/API on `/league/[leagueId]`.
+2. Enforce all role permissions server-side on those mutations.
+3. Retire legacy hash-router page (`/`) once `/league/[leagueId]` reaches feature parity.
+4. Run Prisma Studio to validate production-like data manually.
