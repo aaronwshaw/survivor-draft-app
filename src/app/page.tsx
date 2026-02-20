@@ -1,0 +1,191 @@
+import Script from "next/script";
+
+export default function Home() {
+  return (
+    <>
+      <header className="app-header main-header">
+        <h1>Survivor Team Draft</h1>
+        <div className="header-actions auth-actions">
+          <span id="currentUserLabel" className="muted" />
+          <button id="logoutButton" className="secondary" type="button">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      <main className="app-shell">
+        <section id="loginView" className="page-view" aria-labelledby="loginTitle">
+          <h2 id="loginTitle">Login</h2>
+          <p className="muted">Use email to sign in or create an account.</p>
+          <form id="authForm" className="card form-grid">
+            <label>
+              Email
+              <input id="authEmail" type="email" required placeholder="you@example.com" />
+            </label>
+            <label>
+              Display Name (optional)
+              <input id="authDisplayName" type="text" placeholder="Your name" />
+            </label>
+            <div className="button-row">
+              <button id="signInButton" type="submit">
+                Sign In
+              </button>
+              <button id="signUpButton" type="button" className="secondary">
+                Sign Up
+              </button>
+            </div>
+          </form>
+          <p id="loginMessage" className="message" />
+        </section>
+
+        <section id="leaguesView" className="page-view view-hidden" aria-labelledby="leaguesTitle">
+          <h2 id="leaguesTitle">Your Leagues</h2>
+          <div className="leagues-grid">
+            <section className="card">
+              <h3>Memberships</h3>
+              <div id="leaguesList" className="leagues-list" />
+            </section>
+
+            <section className="card">
+              <h3>Create League</h3>
+              <form id="createLeagueForm" className="form-grid">
+                <label>
+                  League Name
+                  <input id="createLeagueName" type="text" required placeholder="Family Survivor Pool" />
+                </label>
+                <button type="submit">Create League</button>
+              </form>
+            </section>
+
+            <section className="card">
+              <h3>Join League</h3>
+              <form id="joinLeagueForm" className="form-grid">
+                <label>
+                  Invite Code
+                  <input id="joinLeagueCode" type="text" required placeholder="ABC123" />
+                </label>
+                <button type="submit">Join League</button>
+              </form>
+            </section>
+          </div>
+          <p id="leaguesMessage" className="message" />
+        </section>
+
+        <section id="leagueView" className="page-view view-hidden" aria-labelledby="leagueTitle">
+          <div className="league-topbar card">
+            <div>
+              <h2 id="leagueTitle" />
+              <p id="leagueMeta" className="muted" />
+              <p id="leagueInviteCode" className="muted" />
+            </div>
+            <div className="header-actions">
+              <button id="backToLeaguesButton" className="secondary" type="button">
+                Back to Leagues
+              </button>
+              <div className="view-toggle">
+                <button id="draftViewButton" className="secondary active-view" type="button">
+                  Draft View
+                </button>
+                <button id="teamsViewButton" className="secondary" type="button">
+                  Teams Photo View
+                </button>
+              </div>
+              <button id="resetButton" className="danger-button" type="button">
+                Reset League
+              </button>
+            </div>
+          </div>
+
+          <p id="leagueMessage" className="message" />
+
+          <section id="adminAssignCard" className="card view-hidden" aria-labelledby="adminAssignTitle">
+            <h3 id="adminAssignTitle">Admin: Add User To Team</h3>
+            <form id="adminAssignForm" className="form-grid">
+              <label>
+                User Email
+                <input id="adminAssignEmail" type="email" required placeholder="user@example.com" />
+              </label>
+              <label>
+                Team
+                <select id="adminAssignTeamSelect" required />
+              </label>
+              <button type="submit">Add / Move User</button>
+            </form>
+          </section>
+
+          <div id="draftLayout" className="layout">
+            <section className="teams-panel" aria-labelledby="teamsTitle">
+              <h3 id="teamsTitle">Teams</h3>
+              <div id="teamsContainer" className="teams-grid" />
+            </section>
+
+            <section className="pool-panel" aria-labelledby="playersTitle">
+              <div className="panel-head">
+                <h3 id="playersTitle">Player Pool</h3>
+                <label className="inline-filter" htmlFor="draftFilterSelect">
+                  Sort
+                  <select id="draftFilterSelect">
+                    <option value="alpha">Alphabetical</option>
+                    <option value="season">First Season</option>
+                  </select>
+                </label>
+              </div>
+              <div id="playersContainer" className="players-grid" />
+            </section>
+          </div>
+
+          <section id="teamsColumnsView" className="teams-columns-panel view-hidden" aria-labelledby="teamsColumnsTitle">
+            <h3 id="teamsColumnsTitle">Teams Split View (8 Columns)</h3>
+            <div className="teams-columns-scroll">
+              <div id="teamColumnsContainer" className="team-columns-grid" />
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <div id="assignModal" className="modal hidden" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+        <div className="modal-card">
+          <h3 id="assignTitle">Assign Player</h3>
+          <p id="assignPlayerName" />
+          <select id="assignSelect" />
+          <div className="modal-actions">
+            <button id="assignConfirm" type="button">
+              Save
+            </button>
+            <button id="assignCancel" type="button" className="secondary">
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="detailsModal" className="modal hidden" role="dialog" aria-modal="true" aria-labelledby="detailsName">
+        <div className="modal-card">
+          <button id="detailsCloseTop" className="icon-close" type="button" aria-label="Close details">
+            x
+          </button>
+          <img id="detailsPhoto" className="details-photo" alt="" />
+          <h3 id="detailsName" />
+          <p>
+            <strong>Age:</strong> <span id="detailsAge" />
+          </p>
+          <p>
+            <strong>Tribe:</strong> <span id="detailsTribe" />
+          </p>
+          <h4>Seasons</h4>
+          <ul id="detailsSeasons" />
+          <div className="modal-actions">
+            <button id="detailsEliminateButton" type="button" className="danger-button">
+              Eliminated
+            </button>
+            <button id="detailsCloseBottom" type="button" className="secondary">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Script src="/legacy-app.js" strategy="afterInteractive" />
+    </>
+  );
+}
