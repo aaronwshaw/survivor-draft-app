@@ -82,6 +82,9 @@ export default function Home() {
               <button id="backToLeaguesButton" className="secondary" type="button">
                 Back to Leagues
               </button>
+              <button id="teamAssignmentsButton" className="secondary view-hidden" type="button">
+                Team Assignments
+              </button>
               <div className="view-toggle">
                 <button id="draftViewButton" className="secondary active-view" type="button">
                   Draft View
@@ -98,19 +101,21 @@ export default function Home() {
 
           <p id="leagueMessage" className="message" />
 
-          <section id="adminAssignCard" className="card view-hidden" aria-labelledby="adminAssignTitle">
-            <h3 id="adminAssignTitle">Admin: Add User To Team</h3>
-            <form id="adminAssignForm" className="form-grid">
-              <label>
-                User Email
-                <input id="adminAssignEmail" type="email" required placeholder="user@example.com" />
-              </label>
-              <label>
-                Team
-                <select id="adminAssignTeamSelect" required />
-              </label>
-              <button type="submit">Add / Move User</button>
-            </form>
+          <section id="teamAssignmentsView" className="card view-hidden" aria-labelledby="teamAssignmentsTitle">
+            <h3 id="teamAssignmentsTitle">Team Assignments</h3>
+            <p className="muted">Admins can reassign members between teams.</p>
+            <div className="team-assignments-table-wrap">
+              <table className="team-assignments-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Assigned Team</th>
+                  </tr>
+                </thead>
+                <tbody id="teamAssignmentsTableBody" />
+              </table>
+            </div>
           </section>
 
           <div id="draftLayout" className="layout">

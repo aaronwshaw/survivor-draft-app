@@ -33,6 +33,7 @@ const state = {
   db: null,
   session: { currentUserId: null },
   currentSubview: "draft",
+  showTeamAssignments: false,
   draftFilter: "alpha",
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null
@@ -59,10 +60,9 @@ const ui = {
   leagueTitle: document.getElementById("leagueTitle"),
   leagueMeta: document.getElementById("leagueMeta"),
   leagueInviteCode: document.getElementById("leagueInviteCode"),
-  adminAssignCard: document.getElementById("adminAssignCard"),
-  adminAssignForm: document.getElementById("adminAssignForm"),
-  adminAssignEmail: document.getElementById("adminAssignEmail"),
-  adminAssignTeamSelect: document.getElementById("adminAssignTeamSelect"),
+  teamAssignmentsButton: document.getElementById("teamAssignmentsButton"),
+  teamAssignmentsView: document.getElementById("teamAssignmentsView"),
+  teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
   draftViewButton: document.getElementById("draftViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
@@ -177,8 +177,14 @@ function createLeague(name, ownerUserId) {
   if (!leagueName) throw new Error("League name is required.");
   const league = { id: id("l"), name: leagueName, ownerUserId, inviteCode: inviteCode(), createdAt: nowIso(), updatedAt: nowIso() };
   state.db.leagues.push(league);
-  for (let i = 1; i <= 8; i += 1) state.db.teams.push({ id: id("t"), leagueId: league.id, slotNumber: i, name: `Team ${i}`, ownerUserId: null });
-  state.db.memberships.push({ id: id("m"), leagueId: league.id, userId: ownerUserId, role: "admin", teamId: null, createdAt: nowIso() });
+  let adminTeamId = null;
+  for (let i = 1; i <= 8; i += 1) {
+    const teamId = id("t");
+    const ownerId = i === 1 ? ownerUserId : null;
+    if (i === 1) adminTeamId = teamId;
+    state.db.teams.push({ id: teamId, leagueId: league.id, slotNumber: i, name: `Team ${i}`, ownerUserId: ownerId });
+  }
+  state.db.memberships.push({ id: id("m"), leagueId: league.id, userId: ownerUserId, role: "admin", teamId: adminTeamId, createdAt: nowIso() });
   state.db.draftStates.push({ leagueId: league.id, assignmentByPlayerId: {}, eliminationByPlayerId: {}, updatedAt: nowIso() });
   saveDb();
   return league;
@@ -210,38 +216,33 @@ function adminAssignUserToTeam(ctx, userEmail, teamId) {
 
   const targetTeam = state.db.teams.find((t) => t.id === teamId && t.leagueId === ctx.league.id);
   if (!targetTeam) throw new Error("Target team not found.");
-  if (targetTeam.ownerUserId && targetTeam.ownerUserId !== targetUser.id) {
-    throw new Error("That team is already owned by another user.");
-  }
-
-  if (targetUser.id === ctx.league.ownerUserId) {
-    throw new Error("Admin owner does not take a team slot in this setup.");
-  }
 
   const existingMembership = membership(targetUser.id, ctx.league.id);
-  if (existingMembership && existingMembership.role === "admin") {
-    throw new Error("Admins cannot be assigned to team slots.");
+  if (!existingMembership) throw new Error("User is not in this league.");
+
+  const currentTeam = existingMembership.teamId
+    ? state.db.teams.find((t) => t.id === existingMembership.teamId && t.leagueId === ctx.league.id)
+    : null;
+  const occupyingUserId = targetTeam.ownerUserId && targetTeam.ownerUserId !== targetUser.id
+    ? targetTeam.ownerUserId
+    : null;
+  const occupyingMembership = occupyingUserId ? membership(occupyingUserId, ctx.league.id) : null;
+  if (occupyingUserId && !occupyingMembership) throw new Error("Target team owner is missing membership data.");
+
+  if (currentTeam && currentTeam.id !== targetTeam.id) {
+    currentTeam.ownerUserId = null;
   }
 
-  state.db.teams.forEach((team) => {
-    if (team.leagueId === ctx.league.id && team.ownerUserId === targetUser.id && team.id !== targetTeam.id) {
-      team.ownerUserId = null;
-    }
-  });
-
   targetTeam.ownerUserId = targetUser.id;
+  existingMembership.teamId = targetTeam.id;
 
-  if (existingMembership) {
-    existingMembership.teamId = targetTeam.id;
-  } else {
-    state.db.memberships.push({
-      id: id("m"),
-      leagueId: ctx.league.id,
-      userId: targetUser.id,
-      role: "member",
-      teamId: targetTeam.id,
-      createdAt: nowIso()
-    });
+  if (occupyingUserId && occupyingMembership) {
+    if (currentTeam && currentTeam.id !== targetTeam.id) {
+      currentTeam.ownerUserId = occupyingUserId;
+      occupyingMembership.teamId = currentTeam.id;
+    } else {
+      occupyingMembership.teamId = null;
+    }
   }
 
   saveDb();
@@ -666,6 +667,56 @@ function renderLeagues() {
   });
 }
 
+function renderTeamAssignments(ctx) {
+  ui.teamAssignmentsTableBody.innerHTML = "";
+  const rows = state.db.memberships
+    .filter((m) => m.leagueId === ctx.league.id)
+    .map((m) => {
+      const u = state.db.users.find((user) => user.id === m.userId);
+      const t = m.teamId ? state.db.teams.find((team) => team.id === m.teamId && team.leagueId === ctx.league.id) : null;
+      return { membership: m, user: u, team: t };
+    })
+    .filter((r) => !!r.user)
+    .sort((a, b) => (a.user.displayName || a.user.email).localeCompare(b.user.displayName || b.user.email));
+
+  rows.forEach((row) => {
+    const tr = document.createElement("tr");
+    const nameTd = document.createElement("td");
+    const emailTd = document.createElement("td");
+    const teamTd = document.createElement("td");
+
+    nameTd.textContent = row.user.displayName || row.user.email;
+    emailTd.textContent = row.user.email;
+
+    const select = document.createElement("select");
+    ctx.teams.forEach((team) => {
+      const option = document.createElement("option");
+      option.value = team.id;
+      option.textContent = `Team ${team.slotNumber} (${team.name})`;
+      select.appendChild(option);
+    });
+    if (row.team) {
+      select.value = row.team.id;
+    }
+    select.addEventListener("change", () => {
+      try {
+        adminAssignUserToTeam(ctx, row.user.email, select.value);
+        msg("league", `${row.user.displayName || row.user.email} reassigned.`);
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+    teamTd.appendChild(select);
+
+    tr.appendChild(nameTd);
+    tr.appendChild(emailTd);
+    tr.appendChild(teamTd);
+    ui.teamAssignmentsTableBody.appendChild(tr);
+  });
+}
+
 function renderLeague(leagueId) {
   const ctx = ctxForLeague(leagueId);
   if (!ctx) { msg("leagues", "League not found or access denied."); go("#/leagues"); return; }
@@ -677,18 +728,12 @@ function renderLeague(leagueId) {
   ui.resetButton.classList.toggle("view-hidden", !canResetLeague(ctx.user, ctx.membership, ctx.league));
 
   const isAdmin = ctx.membership.role === "admin";
-  ui.adminAssignCard.classList.toggle("view-hidden", !isAdmin);
-  if (isAdmin) {
-    ui.adminAssignTeamSelect.innerHTML = "";
-    ctx.teams.forEach((team) => {
-      const owner = team.ownerUserId ? state.db.users.find((u) => u.id === team.ownerUserId) : null;
-      const option = document.createElement("option");
-      option.value = team.id;
-      option.textContent = owner
-        ? `Team ${team.slotNumber} - ${team.name} (Owner: ${owner.displayName})`
-        : `Team ${team.slotNumber} - ${team.name} (Open)`;
-      ui.adminAssignTeamSelect.appendChild(option);
-    });
+  if (!isAdmin) state.showTeamAssignments = false;
+  ui.teamAssignmentsButton.classList.toggle("view-hidden", !isAdmin);
+  ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
+  ui.teamAssignmentsView.classList.toggle("view-hidden", !(isAdmin && state.showTeamAssignments));
+  if (isAdmin && state.showTeamAssignments) {
+    renderTeamAssignments(ctx);
   }
 
   updateDraftSubview();
@@ -765,24 +810,16 @@ function wire() {
     }
   });
 
-  ui.adminAssignForm.addEventListener("submit", (e) => {
-    e.preventDefault();
+  ui.backToLeaguesButton.addEventListener("click", () => go("#/leagues"));
+  ui.teamAssignmentsButton.addEventListener("click", () => {
     const r = route();
     if (r.name !== "league") return;
     const ctx = ctxForLeague(r.leagueId);
-    if (!ctx) return;
-    try {
-      const assignedTeam = adminAssignUserToTeam(ctx, ui.adminAssignEmail.value, ui.adminAssignTeamSelect.value);
-      ui.adminAssignForm.reset();
-      msg("league", `User assigned to Team ${assignedTeam.slotNumber} (${assignedTeam.name}).`);
-      render();
-    } catch (err) {
-      msg("league", err.message);
-      render();
-    }
+    if (!ctx || ctx.membership.role !== "admin") return;
+    state.showTeamAssignments = !state.showTeamAssignments;
+    ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
+    render();
   });
-
-  ui.backToLeaguesButton.addEventListener("click", () => go("#/leagues"));
   ui.draftViewButton.addEventListener("click", () => { state.currentSubview = "draft"; updateDraftSubview(); });
   ui.teamsViewButton.addEventListener("click", () => { state.currentSubview = "teams"; updateDraftSubview(); });
   ui.draftFilterSelect.addEventListener("change", () => {

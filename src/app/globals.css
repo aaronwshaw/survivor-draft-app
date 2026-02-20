@@ -468,6 +468,28 @@ button:hover {
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
 }
 
+.team-assignments-table-wrap {
+  overflow-x: auto;
+}
+
+.team-assignments-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.team-assignments-table th,
+.team-assignments-table td {
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  padding: 0.5rem;
+}
+
+.team-assignments-table th {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;
