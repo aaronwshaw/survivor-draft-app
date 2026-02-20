@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survivor Team Draft - Login + Roles + Leagues</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header main-header">
+    <h1>Survivor Team Draft</h1>
+    <div class="header-actions auth-actions">
+      <span id="currentUserLabel" class="muted"></span>
+      <button id="logoutButton" class="secondary" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="app-shell">
+    <section id="loginView" class="page-view" aria-labelledby="loginTitle">
+      <h2 id="loginTitle">Login</h2>
+      <p class="muted">Use email to sign in or create an account.</p>
+      <form id="authForm" class="card form-grid">
+        <label>
+          Email
+          <input id="authEmail" type="email" required placeholder="you@example.com">
+        </label>
+        <label>
+          Display Name (optional)
+          <input id="authDisplayName" type="text" placeholder="Your name">
+        </label>
+        <div class="button-row">
+          <button id="signInButton" type="submit">Sign In</button>
+          <button id="signUpButton" type="button" class="secondary">Sign Up</button>
+        </div>
+      </form>
+      <p id="loginMessage" class="message"></p>
+    </section>
+
+    <section id="leaguesView" class="page-view view-hidden" aria-labelledby="leaguesTitle">
+      <h2 id="leaguesTitle">Your Leagues</h2>
+      <div class="leagues-grid">
+        <section class="card">
+          <h3>Memberships</h3>
+          <div id="leaguesList" class="leagues-list"></div>
+        </section>
+
+        <section class="card">
+          <h3>Create League</h3>
+          <form id="createLeagueForm" class="form-grid">
+            <label>
+              League Name
+              <input id="createLeagueName" type="text" required placeholder="Family Survivor Pool">
+            </label>
+            <button type="submit">Create League</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h3>Join League</h3>
+          <form id="joinLeagueForm" class="form-grid">
+            <label>
+              Invite Code
+              <input id="joinLeagueCode" type="text" required placeholder="ABC123">
+            </label>
+            <button type="submit">Join League</button>
+          </form>
+        </section>
+      </div>
+      <p id="leaguesMessage" class="message"></p>
+    </section>
+
+    <section id="leagueView" class="page-view view-hidden" aria-labelledby="leagueTitle">
+      <div class="league-topbar card">
+        <div>
+          <h2 id="leagueTitle"></h2>
+          <p id="leagueMeta" class="muted"></p>
+          <p id="leagueInviteCode" class="muted"></p>
+        </div>
+        <div class="header-actions">
+          <button id="backToLeaguesButton" class="secondary" type="button">Back to Leagues</button>
+          <div class="view-toggle">
+            <button id="draftViewButton" class="secondary active-view" type="button">Draft View</button>
+            <button id="teamsViewButton" class="secondary" type="button">Teams Photo View</button>
+          </div>
+          <button id="resetButton" class="danger-button" type="button">Reset League</button>
+        </div>
+      </div>
+
+      <p id="leagueMessage" class="message"></p>
+
+      <section id="adminAssignCard" class="card view-hidden" aria-labelledby="adminAssignTitle">
+        <h3 id="adminAssignTitle">Admin: Add User To Team</h3>
+        <form id="adminAssignForm" class="form-grid">
+          <label>
+            User Email
+            <input id="adminAssignEmail" type="email" required placeholder="user@example.com">
+          </label>
+          <label>
+            Team
+            <select id="adminAssignTeamSelect" required></select>
+          </label>
+          <button type="submit">Add / Move User</button>
+        </form>
+      </section>
+
+      <div id="draftLayout" class="layout">
+        <section class="teams-panel" aria-labelledby="teamsTitle">
+          <h3 id="teamsTitle">Teams</h3>
+          <div id="teamsContainer" class="teams-grid"></div>
+        </section>
+
+        <section class="pool-panel" aria-labelledby="playersTitle">
+          <div class="panel-head">
+            <h3 id="playersTitle">Player Pool</h3>
+            <label class="inline-filter" for="draftFilterSelect">
+              Sort
+              <select id="draftFilterSelect">
+                <option value="alpha">Alphabetical</option>
+                <option value="season">First Season</option>
+              </select>
+            </label>
+          </div>
+          <div id="playersContainer" class="players-grid"></div>
+        </section>
+      </div>
+
+      <section id="teamsColumnsView" class="teams-columns-panel view-hidden" aria-labelledby="teamsColumnsTitle">
+        <h3 id="teamsColumnsTitle">Teams Split View (8 Columns)</h3>
+        <div class="teams-columns-scroll">
+          <div id="teamColumnsContainer" class="team-columns-grid"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="assignModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="assignTitle">
+    <div class="modal-card">
+      <h3 id="assignTitle">Assign Player</h3>
+      <p id="assignPlayerName"></p>
+      <select id="assignSelect"></select>
+      <div class="modal-actions">
+        <button id="assignConfirm" type="button">Save</button>
+        <button id="assignCancel" type="button" class="secondary">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="detailsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="detailsName">
+    <div class="modal-card">
+      <button id="detailsCloseTop" class="icon-close" type="button" aria-label="Close details">x</button>
+      <img id="detailsPhoto" class="details-photo" alt="">
+      <h3 id="detailsName"></h3>
+      <p><strong>Age:</strong> <span id="detailsAge"></span></p>
+      <p><strong>Tribe:</strong> <span id="detailsTribe"></span></p>
+      <h4>Seasons</h4>
+      <ul id="detailsSeasons"></ul>
+      <div class="modal-actions">
+        <button id="detailsEliminateButton" type="button" class="danger-button">Eliminated</button>
+        <button id="detailsCloseBottom" type="button" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
