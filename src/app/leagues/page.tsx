@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
+import type { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createLeagueWithDefaults, joinLeagueByInviteCode } from "@/lib/league";
 import SignOutButton from "@/components/sign-out-button";
+
+type MembershipWithLeagueTeam = Prisma.MembershipGetPayload<{
+  include: { league: true; team: true };
+}>;
 
 async function requireSessionUser() {
   const session = await getServerSession(authOptions);
@@ -27,7 +32,7 @@ export default async function LeaguesPage({
   const user = await requireSessionUser();
   const qp = (await searchParams) || {};
 
-  const memberships = await prisma.membership.findMany({
+  const memberships: MembershipWithLeagueTeam[] = await prisma.membership.findMany({
     where: { userId: user.id },
     include: {
       league: true,
@@ -83,7 +88,7 @@ export default async function LeaguesPage({
               {memberships.length === 0 ? (
                 <p className="muted">No leagues yet.</p>
               ) : (
-                memberships.map((m) => (
+                memberships.map((m: MembershipWithLeagueTeam) => (
                   <article className="league-item" key={m.id}>
                     <div>
                       <h4>{m.league.name}</h4>
