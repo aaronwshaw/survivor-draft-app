@@ -98,6 +98,7 @@ function nowIso() { return new Date().toISOString(); }
 function id(prefix) { return `${prefix}_${Math.random().toString(36).slice(2, 10)}`; }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
 
 async function hashPassword(rawPassword) {
   const value = String(rawPassword || "");
@@ -152,17 +153,28 @@ function draftState(leagueId) {
 }
 
 async function loadPlayers() {
+  const localDataModule = await import("../data/players.json");
+  const localPlayers = Array.isArray(localDataModule.default) ? localDataModule.default : [];
+  const localById = new Map(localPlayers.map((p) => [p.id, p]));
+  const localByName = new Map(localPlayers.map((p) => [normalizeName(p.name), p]));
+  const mergeLocalSeasons = (rows) => rows.map((row) => {
+    const seasons = normalizeSeasons(row.seasons);
+    if (seasons.length > 0) return { ...row, seasons };
+    const local = localById.get(row.id) || localByName.get(normalizeName(row.name));
+    return {
+      ...row,
+      seasons: normalizeSeasons(local?.seasons),
+    };
+  });
+
   try {
     const r = await fetch("/api/players", { cache: "no-store" });
     if (!r.ok) throw new Error("missing");
     const rows = await r.json();
     if (!Array.isArray(rows) || rows.length === 0) throw new Error("empty");
-    return rows.map((row) => ({
-      ...row,
-      seasons: normalizeSeasons(row.seasons),
-    }));
+    return mergeLocalSeasons(rows);
   } catch {
-    return JSON.parse(JSON.stringify(FALLBACK_PLAYERS));
+    return mergeLocalSeasons(JSON.parse(JSON.stringify(FALLBACK_PLAYERS)));
   }
 }
 
