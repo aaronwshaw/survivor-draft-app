@@ -444,6 +444,30 @@ button:hover {
   justify-content: center;
 }
 
+.admin-assignments-menu {
+  position: relative;
+}
+
+.admin-assignments-menu > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.admin-assignments-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-assignments-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  width: min(800px, 90vw);
+  max-height: 70vh;
+  overflow: auto;
+  z-index: 20;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 980px) {
   .layout {
     grid-template-columns: 1fr;

@@ -28,21 +28,27 @@ export async function createLeagueWithDefaults(leagueName: string, ownerUserId: 
       },
     });
 
-    await tx.team.createMany({
-      data: Array.from({ length: 8 }, (_, i) => ({
-        leagueId: league.id,
-        slotNumber: i + 1,
-        name: `Team ${i + 1}`,
-        ownerUserId: null,
-      })),
-    });
+    let adminTeamId = "";
+    for (let i = 1; i <= 8; i += 1) {
+      const createdTeam = await tx.team.create({
+        data: {
+          leagueId: league.id,
+          slotNumber: i,
+          name: `Team ${i}`,
+          ownerUserId: i === 1 ? ownerUserId : null,
+        },
+      });
+      if (i === 1) {
+        adminTeamId = createdTeam.id;
+      }
+    }
 
     await tx.membership.create({
       data: {
         leagueId: league.id,
         userId: ownerUserId,
         role: "admin",
-        teamId: null,
+        teamId: adminTeamId,
       },
     });
 
