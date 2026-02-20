@@ -842,4 +842,7 @@ async function init() {
   render();
 }
 
-init();
+if (!window.__SURVIVOR_LEGACY_BOOTED__) {
+  window.__SURVIVOR_LEGACY_BOOTED__ = true;
+  void init();
+}

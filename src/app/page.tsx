@@ -1,4 +1,4 @@
-import Script from "next/script";
+import LegacyBootstrap from "./legacy-bootstrap";
 
 export default function Home() {
   return (
@@ -185,7 +185,7 @@ export default function Home() {
         </div>
       </div>
 
-      <Script src="/legacy-app.js" strategy="afterInteractive" />
+      <LegacyBootstrap />
     </>
   );
 }

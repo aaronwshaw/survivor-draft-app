@@ -43,7 +43,9 @@ npx prisma studio
 
 ## Key Paths
 - App page: `src/app/page.tsx`
-- Legacy script used during migration: `public/legacy-app.js`
+- Client runtime bootstrap: `src/app/legacy-bootstrap.tsx`
+- Migrated legacy runtime module: `src/app/legacy-app.js`
+- Player data served to browser: `public/players.json`
 - Global styles: `src/app/globals.css`
 - Prisma schema: `prisma/schema.prisma`
 - NextAuth route: `src/app/api/auth/[...nextauth]/route.ts`
