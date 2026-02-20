@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
@@ -18,7 +19,7 @@ export async function generateUniqueInviteCode(length = 6): Promise<string> {
 
 export async function createLeagueWithDefaults(leagueName: string, ownerUserId: string) {
   const inviteCode = await generateUniqueInviteCode();
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const league = await tx.league.create({
       data: {
         name: leagueName,
@@ -68,7 +69,7 @@ export async function joinLeagueByInviteCode(inviteCodeRaw: string, userId: stri
     throw new Error("Invite code not found. Check for typos and paste only the code.");
   }
 
-  return prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const existingMembership = await tx.membership.findUnique({
       where: { leagueId_userId: { leagueId: league.id, userId } },
     });
