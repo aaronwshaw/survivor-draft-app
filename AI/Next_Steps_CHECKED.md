@@ -48,3 +48,8 @@
 - [x] Claim automatically assigns player to user's team.
 - [x] Prevent users from claiming players assigned to other teams.
 - [x] Update UI immediately after claim/unclaim action.
+
+## 8. Authorization & Role Enforcement
+- [x] Add middleware or helper to verify admin role.
+- [x] Protect admin-only routes.
+- [x] Ensure users can only modify their own team's players.

@@ -1,28 +1,10 @@
-import { authOptions } from "@/lib/auth";
+import { requireLeagueAdmin } from "@/lib/authorization";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-
-async function requireAdmin(leagueId: string) {
-  const session = await getServerSession(authOptions);
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-
-  const membership = await prisma.membership.findUnique({
-    where: { leagueId_userId: { leagueId, userId } },
-  });
-  if (!membership || membership.role !== "admin") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-
-  return { userId };
-}
 
 export async function GET(_: Request, context: { params: Promise<{ leagueId: string }> }) {
   const { leagueId } = await context.params;
-  const auth = await requireAdmin(leagueId);
+  const auth = await requireLeagueAdmin(leagueId);
   if ("error" in auth) return auth.error;
 
   const rows = await prisma.membership.findMany({
@@ -54,7 +36,7 @@ export async function GET(_: Request, context: { params: Promise<{ leagueId: str
 
 export async function PATCH(request: Request, context: { params: Promise<{ leagueId: string }> }) {
   const { leagueId } = await context.params;
-  const auth = await requireAdmin(leagueId);
+  const auth = await requireLeagueAdmin(leagueId);
   if ("error" in auth) return auth.error;
 
   const body = (await request.json().catch(() => null)) as { userId?: string; teamId?: string } | null;
