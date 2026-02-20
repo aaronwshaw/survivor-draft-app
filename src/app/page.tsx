@@ -18,7 +18,7 @@ export default function Home() {
           <img className="landing-top-banner" src="/photos/50logo.png" alt="Survivor 50 banner" />
           <div className="landing-hero card">
             <h2 id="loginTitle">Welcome to the Survivor Fantasy Draft</h2>
-            <p className="muted">Build your team, manage your league, and track eliminations all season.</p>
+            <p className="muted">Log in or create an account with your username and password.</p>
             <div className="landing-options">
               <button id="landingLoginOption" type="button">
                 Login
@@ -30,19 +30,23 @@ export default function Home() {
           </div>
           <form id="authForm" className="card form-grid landing-auth-form">
             <label>
-              Email
-              <input id="authEmail" type="email" required placeholder="you@example.com" />
+              Username
+              <input id="authUsername" type="text" required placeholder="your-username" />
             </label>
             <label>
-              Display Name (optional)
+              Password
+              <input id="authPassword" type="password" required placeholder="Enter password" />
+            </label>
+            <label>
+              Display Name (for create account)
               <input id="authDisplayName" type="text" placeholder="Your name" />
             </label>
             <div className="button-row">
               <button id="signInButton" type="submit">
-                Sign In
+                Login
               </button>
               <button id="signUpButton" type="button" className="secondary">
-                Sign Up
+                Create Account
               </button>
             </div>
           </form>
@@ -121,7 +125,7 @@ export default function Home() {
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th>Username</th>
                     <th>Assigned Team</th>
                   </tr>
                 </thead>

@@ -22,8 +22,8 @@
 - [x] Ensure layout is responsive and centered.
 
 ## 4. Authentication Forms
-- [ ] Login form requires: Username and Password.
-- [ ] Create Account form requires: Username, Password, Display Name.
-- [ ] Store hashed password in database.
-- [ ] Validate unique username on registration.
-- [ ] Redirect to leagues dashboard after login.
+- [x] Login form requires: Username and Password.
+- [x] Create Account form requires: Username, Password, Display Name.
+- [x] Store hashed password in database.
+- [x] Validate unique username on registration.
+- [x] Redirect to leagues dashboard after login.

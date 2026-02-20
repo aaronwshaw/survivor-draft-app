@@ -49,7 +49,8 @@ const ui = {
   leaguesMessage: document.getElementById("leaguesMessage"),
   leagueMessage: document.getElementById("leagueMessage"),
   authForm: document.getElementById("authForm"),
-  authEmail: document.getElementById("authEmail"),
+  authUsername: document.getElementById("authUsername"),
+  authPassword: document.getElementById("authPassword"),
   authDisplayName: document.getElementById("authDisplayName"),
   landingLoginOption: document.getElementById("landingLoginOption"),
   landingCreateOption: document.getElementById("landingCreateOption"),
@@ -95,6 +96,15 @@ function nowIso() { return new Date().toISOString(); }
 function id(prefix) { return `${prefix}_${Math.random().toString(36).slice(2, 10)}`; }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+
+async function hashPassword(rawPassword) {
+  const value = String(rawPassword || "");
+  if (!value) throw new Error("Password is required.");
+  if (!globalThis.crypto?.subtle) throw new Error("Secure password hashing is unavailable in this browser.");
+  const bytes = new TextEncoder().encode(value);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 function loadDb() {
   try { return JSON.parse(localStorage.getItem(DB_KEY)) || { users: [], leagues: [], teams: [], memberships: [], draftStates: [] }; }
@@ -150,21 +160,30 @@ function inviteCode() {
   return v;
 }
 
-function signUp(userEmail, displayName) {
-  const e = email(userEmail);
-  if (!e) throw new Error("Email is required.");
-  if (state.db.users.some((u) => u.email === e)) throw new Error("That email already exists. Please sign in.");
-  const u = { id: id("usr"), email: e, displayName: String(displayName || "").trim() || e.split("@")[0] };
+async function signUp(rawUsername, rawPassword, displayName) {
+  const username = email(rawUsername);
+  if (!username) throw new Error("Username is required.");
+  const name = String(displayName || "").trim();
+  if (!name) throw new Error("Display name is required for account creation.");
+  if (state.db.users.some((u) => u.username === username || u.email === username)) {
+    throw new Error("That username already exists. Please log in.");
+  }
+  const passwordHash = await hashPassword(rawPassword);
+  const u = { id: id("usr"), username, email: username, displayName: name, passwordHash };
   state.db.users.push(u);
   state.session.currentUserId = u.id;
   saveDb();
   saveSession();
 }
 
-function signIn(userEmail) {
-  const e = email(userEmail);
-  const u = state.db.users.find((x) => x.email === e);
-  if (!u) throw new Error("No account found for that email. Use Sign Up first.");
+async function signIn(rawUsername, rawPassword) {
+  const username = email(rawUsername);
+  if (!username) throw new Error("Username is required.");
+  const u = state.db.users.find((x) => x.username === username || x.email === username);
+  if (!u) throw new Error("No account found for that username. Use Create Account first.");
+  if (!u.passwordHash) throw new Error("This account does not have a password. Create a new account.");
+  const passwordHash = await hashPassword(rawPassword);
+  if (u.passwordHash !== passwordHash) throw new Error("Incorrect username or password.");
   state.session.currentUserId = u.id;
   saveSession();
 }
@@ -358,7 +377,7 @@ function toggleView(name) {
 function renderAuth() {
   const user = currentUser();
   ui.logoutButton.classList.toggle("view-hidden", !user);
-  ui.currentUserLabel.textContent = user ? `${user.displayName} (${user.email})` : "";
+  ui.currentUserLabel.textContent = user ? `${user.displayName} (@${user.username || user.email})` : "";
 }
 
 function leagueRows(userId) {
@@ -770,20 +789,21 @@ function render() {
 
 function wire() {
   window.addEventListener("hashchange", () => { msg("", ""); render(); });
-  ui.authForm.addEventListener("submit", (e) => {
+  ui.authForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    try { signIn(ui.authEmail.value); msg("", ""); go("#/leagues"); }
+    try { await signIn(ui.authUsername.value, ui.authPassword.value); msg("", ""); go("#/leagues"); }
     catch (err) { msg("login", err.message); render(); }
   });
-  ui.signUpButton.addEventListener("click", () => {
-    try { signUp(ui.authEmail.value, ui.authDisplayName.value); msg("", ""); go("#/leagues"); }
+  ui.signUpButton.addEventListener("click", async () => {
+    try { await signUp(ui.authUsername.value, ui.authPassword.value, ui.authDisplayName.value); msg("", ""); go("#/leagues"); }
     catch (err) { msg("login", err.message); render(); }
   });
   ui.landingLoginOption.addEventListener("click", () => {
-    ui.authEmail.focus();
+    ui.authUsername.focus();
   });
   ui.landingCreateOption.addEventListener("click", () => {
-    ui.authEmail.focus();
+    ui.authUsername.focus();
+    ui.authPassword.focus();
     ui.authDisplayName.focus();
   });
   ui.logoutButton.addEventListener("click", () => { signOut(); msg("", ""); go("#/login"); });
@@ -892,3 +912,5 @@ if (!window.__SURVIVOR_LEGACY_BOOTED__) {
   window.__SURVIVOR_LEGACY_BOOTED__ = true;
   void init();
 }
+
+export {};

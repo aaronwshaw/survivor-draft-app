@@ -64,7 +64,7 @@ export async function PATCH(request: Request, context: { params: Promise<{ leagu
     return NextResponse.json({ error: "userId and teamId are required" }, { status: 400 });
   }
 
-  const result = await prisma.$transaction(async (tx) => {
+  const result: { ok: true } | { ok: false; message: string } = await prisma.$transaction(async (tx) => {
     const targetMembership = await tx.membership.findUnique({
       where: { leagueId_userId: { leagueId, userId: targetUserId } },
     });
@@ -118,10 +118,10 @@ export async function PATCH(request: Request, context: { params: Promise<{ leagu
       }
     }
 
-    return { ok: true };
+    return { ok: true as const };
   }).catch((err: unknown) => {
     const message = err instanceof Error ? err.message : "Unable to update assignment.";
-    return { ok: false, message };
+    return { ok: false as const, message };
   });
 
   if (!result.ok) {
