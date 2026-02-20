@@ -8,6 +8,18 @@ function normalizePlacement(placement) {
   return String(placement || "").trim().toLowerCase();
 }
 
+function normalizeName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function parseSeasonNumber(value) {
+  const text = String(value || "");
+  const match = text.match(/\d+/);
+  if (!match) return null;
+  const n = Number(match[0]);
+  return Number.isFinite(n) ? n : null;
+}
+
 function computeStats(seasons) {
   const list = Array.isArray(seasons) ? seasons : [];
   const seasonCount = list.length;
@@ -60,6 +72,37 @@ async function main() {
         finalistCount: stats.finalistCount,
       },
     });
+  }
+
+  const allPlayers = await prisma.player.findMany({
+    select: { id: true, name: true },
+  });
+  const sourceById = new Map(players.map((p) => [String(p.id), p]));
+  const sourceByName = new Map(players.map((p) => [normalizeName(p.name), p]));
+
+  for (const player of allPlayers) {
+    const source = sourceById.get(player.id) || sourceByName.get(normalizeName(player.name));
+    if (!source) continue;
+    const seasons = Array.isArray(source.seasons) ? source.seasons : [];
+
+    await prisma.playerSeason.deleteMany({
+      where: { playerId: player.id },
+    });
+
+    if (seasons.length > 0) {
+      await prisma.playerSeason.createMany({
+        data: seasons.map((season) => ({
+          playerId: player.id,
+          seasonLabel: typeof season === "number" ? `Season ${season}` : String(season.season || ""),
+          seasonNumber:
+            typeof season === "number" ? season : parseSeasonNumber(season && season.season),
+          placement:
+            season && typeof season === "object" && "placement" in season
+              ? (season.placement == null ? null : String(season.placement))
+              : null,
+        })),
+      });
+    }
   }
 
   console.log(`Seeded ${players.length} players.`);

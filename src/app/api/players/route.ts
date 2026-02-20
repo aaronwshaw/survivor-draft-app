@@ -36,16 +36,55 @@ export async function GET() {
       age: true,
       tribe: true,
       seasons: true,
+      seasonsPlayed: {
+        orderBy: [{ seasonNumber: "asc" }, { seasonLabel: "asc" }],
+        select: {
+          seasonLabel: true,
+          placement: true,
+        },
+      },
     },
   });
 
   const withSeasonFallback = players.map((player) => {
+    const relationalSeasons = Array.isArray(player.seasonsPlayed)
+      ? player.seasonsPlayed
+          .map((row) => ({
+            season: row.seasonLabel,
+            placement: row.placement ?? null,
+          }))
+          .filter((row) => row.season)
+      : [];
+    if (relationalSeasons.length > 0) {
+      return {
+        id: player.id,
+        name: player.name,
+        photoUrl: player.photoUrl,
+        age: player.age,
+        tribe: player.tribe,
+        seasons: relationalSeasons,
+      };
+    }
+
     const seasons = normalizeSeasons(player.seasons);
-    if (seasons.length > 0) return player;
+    if (seasons.length > 0) {
+      return {
+        id: player.id,
+        name: player.name,
+        photoUrl: player.photoUrl,
+        age: player.age,
+        tribe: player.tribe,
+        seasons,
+      };
+    }
 
     const fallback = fallbackById.get(player.id) || fallbackByName.get(normalizeName(player.name));
     return {
-      ...player,
+      id: player.id,
+      name: player.name,
+      photoUrl: player.photoUrl,
+      age: player.age,
+      tribe: player.tribe,
       seasons: Array.isArray(fallback?.seasons) ? fallback.seasons : [],
     };
   });
