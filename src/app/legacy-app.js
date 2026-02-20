@@ -298,6 +298,11 @@ function ctxForLeague(leagueId) {
   return { user, league, membership: m, teams: teamsByLeague(leagueId), draft: draftState(leagueId) };
 }
 
+function myTeam(ctx) {
+  if (!ctx?.membership?.teamId) return null;
+  return ctx.teams.find((t) => t.id === ctx.membership.teamId) || null;
+}
+
 function renameTeam(ctx, teamId, name) {
   const team = state.db.teams.find((t) => t.id === teamId && t.leagueId === ctx.league.id);
   if (!team) throw new Error("Team not found.");
@@ -330,6 +335,17 @@ function assignPlayer(ctx, playerId, teamIdOrNull) {
   draft.assignmentByPlayerId[playerId] = target.id;
   draft.updatedAt = nowIso();
   saveDb();
+}
+
+function claimPlayer(ctx, playerId) {
+  if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
+  const mine = myTeam(ctx);
+  if (!mine) throw new Error("You are not assigned to a team.");
+  const currentTeamId = ctx.draft.assignmentByPlayerId[playerId] || null;
+  if (currentTeamId && currentTeamId !== mine.id) {
+    throw new Error("This player is already claimed by another team.");
+  }
+  assignPlayer(ctx, playerId, mine.id);
 }
 
 function resetLeague(ctx) {
@@ -549,16 +565,18 @@ function teamCard(ctx, team) {
     const li = document.createElement("li");
     li.className = "roster-item";
     li.innerHTML = `<span>${p.name}</span>`;
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "secondary";
-    b.textContent = "Unassign";
-    b.disabled = !canUnassignPlayer(ctx.user, ctx.membership, team);
-    b.addEventListener("click", () => {
-      try { assignPlayer(ctx, p.id, null); render(); }
-      catch (err) { msg("league", err.message); render(); }
-    });
-    li.appendChild(b);
+    const canEdit = canUnassignPlayer(ctx.user, ctx.membership, team);
+    if (canEdit) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "secondary";
+      b.textContent = ctx.membership.role === "admin" ? "Unassign" : "Unclaim";
+      b.addEventListener("click", () => {
+        try { assignPlayer(ctx, p.id, null); render(); }
+        catch (err) { msg("league", err.message); render(); }
+      });
+      li.appendChild(b);
+    }
     ul.appendChild(li);
   });
   card.appendChild(ul);
@@ -589,9 +607,18 @@ function playerCard(ctx, p) {
   d.textContent = "Details";
   d.addEventListener("click", () => openDetails(ctx.league.id, p.id));
   const a = document.createElement("button");
-  a.textContent = "Assign";
-  a.addEventListener("click", () => openAssign(ctx.league.id, p.id));
-  a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
+  if (ctx.membership.role === "admin") {
+    a.textContent = "Assign";
+    a.addEventListener("click", () => openAssign(ctx.league.id, p.id));
+    a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
+  } else {
+    a.textContent = "Claim";
+    a.disabled = !myTeam(ctx);
+    a.addEventListener("click", () => {
+      try { claimPlayer(ctx, p.id); render(); }
+      catch (err) { msg("league", err.message); render(); }
+    });
+  }
   actions.appendChild(d);
   actions.appendChild(a);
   card.appendChild(actions);

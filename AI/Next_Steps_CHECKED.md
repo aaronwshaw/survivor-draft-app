@@ -41,3 +41,10 @@
 - [x] Prevent player cards from overlapping navbar while scrolling.
 - [x] Remove "Team: Unassigned" label from player cards.
 - [x] Only show unassigned players in available player list.
+
+## 7. Claim / Unclaim Logic (User View)
+- [x] Admin retains Assign / Unassign buttons.
+- [x] Non-admin users see Claim / Unclaim buttons.
+- [x] Claim automatically assigns player to user's team.
+- [x] Prevent users from claiming players assigned to other teams.
+- [x] Update UI immediately after claim/unclaim action.
