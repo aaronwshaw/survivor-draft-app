@@ -33,13 +33,20 @@ export default async function LeaguePage({ params }: { params: Promise<{ leagueI
   const { leagueId } = await params;
   const user = await requireSessionUser();
 
+  const league = await prisma.league.findUnique({
+    where: { id: leagueId },
+  });
+  if (!league) {
+    notFound();
+  }
+
   const membership = await prisma.membership.findUnique({
     where: { leagueId_userId: { leagueId, userId: user.id } },
     include: { league: true, team: true },
   });
 
   if (!membership) {
-    notFound();
+    redirect("/leagues?err=League%20not%20found%20or%20access%20denied.");
   }
 
   const teams: Team[] = (await prisma.team.findMany({
