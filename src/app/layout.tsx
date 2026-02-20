@@ -13,12 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Survovor Draft",
-  description: "Survovor Draft",
+  title: "Survivor Draft",
+  description: "Survivor Draft",
   icons: {
-    icon: "/photos/50logo.png",
-    shortcut: "/photos/50logo.png",
-    apple: "/photos/50logo.png",
+    icon: "/photos/50logo.png?v=2",
+    shortcut: "/photos/50logo.png?v=2",
+    apple: "/photos/50logo.png?v=2",
   },
 };
 

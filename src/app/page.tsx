@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <>
       <header className="app-header main-header">
-        <h1>Survivor Team Draft</h1>
+        <h1>Survivor Draft</h1>
         <div className="header-actions auth-actions">
           <span id="currentUserLabel" className="muted" />
           <button id="logoutButton" className="secondary" type="button">
