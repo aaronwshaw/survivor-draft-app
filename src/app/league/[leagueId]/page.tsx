@@ -5,6 +5,17 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SignOutButton from "@/components/sign-out-button";
 
+type Team = {
+  id: string;
+  slotNumber: number;
+  name: string;
+  ownerUserId?: string | null;
+  owner?: {
+    displayName?: string | null;
+    email?: string | null;
+  } | null;
+};
+
 async function requireSessionUser() {
   const session = await getServerSession(authOptions);
   const email = session?.user?.email?.toLowerCase();
@@ -31,11 +42,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ leagueI
     notFound();
   }
 
-  const teams = await prisma.team.findMany({
+  const teams: Team[] = (await prisma.team.findMany({
     where: { leagueId },
     orderBy: { slotNumber: "asc" },
     include: { owner: true },
-  });
+  })) as Team[];
 
   return (
     <main className="app-shell">
@@ -65,7 +76,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ leagueI
         <div className="card">
           <h3>Teams</h3>
           <div className="teams-grid">
-            {teams.map((team) => (
+            {teams.map((team: Team) => (
               <article key={team.id} className="team-card">
                 <h4>
                   Team {team.slotNumber}: {team.name}
