@@ -378,6 +378,17 @@ function updateDraftSubview() {
   ui.teamsViewButton.classList.toggle("active-view", !draft);
 }
 
+function ordinal(n) {
+  const abs = Math.abs(Number(n) || 0);
+  const mod100 = abs % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${abs}th`;
+  const mod10 = abs % 10;
+  if (mod10 === 1) return `${abs}st`;
+  if (mod10 === 2) return `${abs}nd`;
+  if (mod10 === 3) return `${abs}rd`;
+  return `${abs}th`;
+}
+
 function eliminationBadge(draft, playerId) {
   const n = draft.eliminationByPlayerId[playerId];
   if (!n) return null;
@@ -385,7 +396,7 @@ function eliminationBadge(draft, playerId) {
   const b = document.createElement("span");
   b.className = "elimination-badge";
   b.textContent = String(place);
-  b.title = `${place}th place`;
+  b.title = `${ordinal(place)} place`;
   return b;
 }
 
@@ -430,10 +441,10 @@ function updateEliminateButton(ctx, playerId) {
     const place = Math.max(1, state.players.length - Number(n) + 1);
     if (ctx.membership.role === "admin") {
       ui.detailsEliminateButton.disabled = false;
-      ui.detailsEliminateButton.textContent = `Undo Elimination (${place}th place)`;
+      ui.detailsEliminateButton.textContent = `Undo Elimination (${ordinal(place)} place)`;
     } else {
       ui.detailsEliminateButton.disabled = true;
-      ui.detailsEliminateButton.textContent = `Eliminated (${place}th place)`;
+      ui.detailsEliminateButton.textContent = `Eliminated (${ordinal(place)} place)`;
     }
     return;
   }
