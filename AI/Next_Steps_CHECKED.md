@@ -27,3 +27,10 @@
 - [x] Store hashed password in database.
 - [x] Validate unique username on registration.
 - [x] Redirect to leagues dashboard after login.
+
+## 5. Players Data Migration to Database
+- [x] Create Player model in Prisma schema including stats fields.
+- [x] Create migration and apply to Neon database.
+- [x] Write seed script to insert players.json into database.
+- [x] Update app to fetch players from database instead of JSON file.
+- [x] Remove local players.json dependency in production.

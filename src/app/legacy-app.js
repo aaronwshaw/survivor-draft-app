@@ -141,9 +141,11 @@ function draftState(leagueId) {
 
 async function loadPlayers() {
   try {
-    const r = await fetch("players.json");
+    const r = await fetch("/api/players", { cache: "no-store" });
     if (!r.ok) throw new Error("missing");
-    return await r.json();
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) throw new Error("empty");
+    return rows;
   } catch {
     return JSON.parse(JSON.stringify(FALLBACK_PLAYERS));
   }
