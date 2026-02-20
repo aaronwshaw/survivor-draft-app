@@ -157,10 +157,30 @@ async function loadPlayers() {
     if (!r.ok) throw new Error("missing");
     const rows = await r.json();
     if (!Array.isArray(rows) || rows.length === 0) throw new Error("empty");
-    return rows;
+    return rows.map((row) => ({
+      ...row,
+      seasons: normalizeSeasons(row.seasons),
+    }));
   } catch {
     return JSON.parse(JSON.stringify(FALLBACK_PLAYERS));
   }
+}
+
+function normalizeSeasons(rawSeasons) {
+  if (Array.isArray(rawSeasons)) return rawSeasons;
+  if (typeof rawSeasons === "string") {
+    try {
+      const parsed = JSON.parse(rawSeasons);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  if (rawSeasons && typeof rawSeasons === "object") {
+    const values = Object.values(rawSeasons);
+    return Array.isArray(values) ? values : [];
+  }
+  return [];
 }
 
 function inviteCode() {
@@ -515,7 +535,7 @@ function openDetails(leagueId, playerId) {
   ui.detailsAge.textContent = p.age ?? "Unknown";
   ui.detailsTribe.textContent = p.tribe ?? "Unknown";
   ui.detailsSeasons.innerHTML = "";
-  (Array.isArray(p.seasons) ? p.seasons : []).forEach((s) => {
+  normalizeSeasons(p.seasons).forEach((s) => {
     const li = document.createElement("li");
     li.textContent = typeof s === "number" ? `Season ${s}` : (s.placement ? `${s.season} (${s.placement})` : s.season);
     ui.detailsSeasons.appendChild(li);
@@ -667,7 +687,7 @@ function teamColumn(ctx, team) {
 }
 
 function firstSeasonNumber(player) {
-  const seasons = Array.isArray(player.seasons) ? player.seasons : [];
+  const seasons = normalizeSeasons(player.seasons);
   const nums = seasons
     .map((entry) => {
       if (typeof entry === "number") return entry;
