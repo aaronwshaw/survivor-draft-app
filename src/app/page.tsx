@@ -20,7 +20,7 @@ export default function Home() {
             <h2 id="loginTitle">Welcome to the Survivor Fantasy Draft</h2>
             <p className="muted">Log in or create an account with your username and password.</p>
             <div className="landing-options">
-              <button id="landingLoginOption" type="button">
+              <button id="landingLoginOption" type="button" className="active-mode">
                 Login
               </button>
               <button id="landingCreateOption" type="button" className="secondary">
@@ -37,16 +37,13 @@ export default function Home() {
               Password
               <input id="authPassword" type="password" required placeholder="Enter password" />
             </label>
-            <label>
+            <label id="authDisplayNameField" hidden>
               Display Name (for create account)
               <input id="authDisplayName" type="text" placeholder="Your name" />
             </label>
             <div className="button-row">
-              <button id="signInButton" type="submit">
+              <button id="authSubmitButton" type="submit">
                 Login
-              </button>
-              <button id="signUpButton" type="button" className="secondary">
-                Create Account
               </button>
             </div>
           </form>

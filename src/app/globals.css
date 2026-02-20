@@ -31,6 +31,7 @@ body {
   position: sticky;
   top: 0;
   backdrop-filter: blur(8px);
+  z-index: 50;
 }
 
 .header-actions {
@@ -88,6 +89,11 @@ h1 {
   justify-content: center;
   gap: 0.7rem;
   flex-wrap: wrap;
+}
+
+.landing-options .active-mode {
+  background: var(--accent);
+  color: #fff;
 }
 
 .landing-auth-form {
@@ -204,6 +210,7 @@ select {
   grid-template-columns: 1fr 1.5fr;
   gap: 1rem;
   padding: 0;
+  align-items: start;
 }
 
 .teams-panel,
@@ -212,6 +219,13 @@ select {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 1rem;
+}
+
+.teams-panel {
+  position: sticky;
+  top: 84px;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
 }
 
 .teams-grid {
@@ -550,6 +564,12 @@ button:hover {
 
   .teams-columns-panel {
     margin: 0;
+  }
+
+  .teams-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
   }
 
   .league-topbar {

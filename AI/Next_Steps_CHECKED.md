@@ -34,3 +34,10 @@
 - [x] Write seed script to insert players.json into database.
 - [x] Update app to fetch players from database instead of JSON file.
 - [x] Remove local players.json dependency in production.
+
+## 6. Draft Page UI Improvements
+- [x] Make teams sidebar fixed on left side (sticky positioning).
+- [x] Ensure navbar has higher z-index so it always stays on top.
+- [x] Prevent player cards from overlapping navbar while scrolling.
+- [x] Remove "Team: Unassigned" label from player cards.
+- [x] Only show unassigned players in available player list.

@@ -32,6 +32,7 @@ const state = {
   players: [],
   db: null,
   session: { currentUserId: null },
+  authMode: "login",
   currentSubview: "draft",
   showTeamAssignments: false,
   draftFilter: "alpha",
@@ -51,10 +52,11 @@ const ui = {
   authForm: document.getElementById("authForm"),
   authUsername: document.getElementById("authUsername"),
   authPassword: document.getElementById("authPassword"),
+  authDisplayNameField: document.getElementById("authDisplayNameField"),
   authDisplayName: document.getElementById("authDisplayName"),
+  authSubmitButton: document.getElementById("authSubmitButton"),
   landingLoginOption: document.getElementById("landingLoginOption"),
   landingCreateOption: document.getElementById("landingCreateOption"),
-  signUpButton: document.getElementById("signUpButton"),
   leaguesList: document.getElementById("leaguesList"),
   createLeagueForm: document.getElementById("createLeagueForm"),
   createLeagueName: document.getElementById("createLeagueName"),
@@ -121,6 +123,16 @@ function msg(view, text) {
   ui.loginMessage.textContent = view === "login" ? text : "";
   ui.leaguesMessage.textContent = view === "leagues" ? text : "";
   ui.leagueMessage.textContent = view === "league" ? text : "";
+}
+
+function setAuthMode(mode) {
+  state.authMode = mode === "signup" ? "signup" : "login";
+  const isSignup = state.authMode === "signup";
+  ui.authDisplayNameField.hidden = !isSignup;
+  ui.authDisplayName.required = isSignup;
+  ui.authSubmitButton.textContent = isSignup ? "Create Account" : "Login";
+  ui.landingLoginOption.classList.toggle("active-mode", !isSignup);
+  ui.landingCreateOption.classList.toggle("active-mode", isSignup);
 }
 
 function currentUser() { return state.db.users.find((u) => u.id === state.session.currentUserId) || null; }
@@ -570,12 +582,6 @@ function playerCard(ctx, p) {
   const h = document.createElement("h3");
   h.textContent = p.name;
   card.appendChild(h);
-  const tid = ctx.draft.assignmentByPlayerId[p.id];
-  const team = tid ? ctx.teams.find((t) => t.id === tid) : null;
-  const info = document.createElement("p");
-  info.className = "team-indicator";
-  info.textContent = `Team: ${team ? team.name : "Unassigned"}`;
-  card.appendChild(info);
   const actions = document.createElement("div");
   actions.className = "card-actions";
   const d = document.createElement("button");
@@ -793,17 +799,23 @@ function wire() {
   window.addEventListener("hashchange", () => { msg("", ""); render(); });
   ui.authForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    try { await signIn(ui.authUsername.value, ui.authPassword.value); msg("", ""); go("#/leagues"); }
-    catch (err) { msg("login", err.message); render(); }
-  });
-  ui.signUpButton.addEventListener("click", async () => {
-    try { await signUp(ui.authUsername.value, ui.authPassword.value, ui.authDisplayName.value); msg("", ""); go("#/leagues"); }
+    try {
+      if (state.authMode === "signup") {
+        await signUp(ui.authUsername.value, ui.authPassword.value, ui.authDisplayName.value);
+      } else {
+        await signIn(ui.authUsername.value, ui.authPassword.value);
+      }
+      msg("", "");
+      go("#/leagues");
+    }
     catch (err) { msg("login", err.message); render(); }
   });
   ui.landingLoginOption.addEventListener("click", () => {
+    setAuthMode("login");
     ui.authUsername.focus();
   });
   ui.landingCreateOption.addEventListener("click", () => {
+    setAuthMode("signup");
     ui.authUsername.focus();
     ui.authPassword.focus();
     ui.authDisplayName.focus();
@@ -907,6 +919,7 @@ async function init() {
   state.db = loadDb();
   state.session = loadSession();
   wire();
+  setAuthMode("login");
   render();
 }
 
