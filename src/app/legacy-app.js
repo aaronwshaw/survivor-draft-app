@@ -170,6 +170,13 @@ function desiredLiveSyncInterval() {
   return draft.isDraftActive ? 2000 : 5000;
 }
 
+function isEditingField() {
+  const active = document.activeElement;
+  if (!active || !(active instanceof HTMLElement)) return false;
+  if (active.isContentEditable) return true;
+  return !!active.closest("input, textarea, select");
+}
+
 function ensureLiveSync() {
   const interval = desiredLiveSyncInterval();
   if (interval === 0) {
@@ -184,9 +191,11 @@ function ensureLiveSync() {
     const r = route();
     if (r.name !== "league") return;
     if (!currentUser()) return;
+    if (isEditingField()) return;
     state.liveSyncInFlight = true;
     try {
       await syncDb();
+      if (isEditingField()) return;
       render();
     } catch {
       // keep polling; transient network issues should self-heal
