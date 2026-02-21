@@ -35,7 +35,9 @@ const state = {
   authMode: "login",
   currentSubview: "draft",
   showTeamAssignments: false,
+  showTurnPreview: false,
   draftFilter: "alpha",
+  tribeFilter: "all",
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null
 };
@@ -65,6 +67,18 @@ const ui = {
   leagueTitle: document.getElementById("leagueTitle"),
   leagueMeta: document.getElementById("leagueMeta"),
   leagueInviteCode: document.getElementById("leagueInviteCode"),
+  copyInviteCodeButton: document.getElementById("copyInviteCodeButton"),
+  turnBanner: document.getElementById("turnBanner"),
+  turnBannerText: document.getElementById("turnBannerText"),
+  turnPreview: document.getElementById("turnPreview"),
+  turnPreviewList: document.getElementById("turnPreviewList"),
+  draftOrderNavButton: document.getElementById("draftOrderNavButton"),
+  draftOrderView: document.getElementById("draftOrderView"),
+  draftTurnStatus: document.getElementById("draftTurnStatus"),
+  draftOrderList: document.getElementById("draftOrderList"),
+  randomizeDraftOrderButton: document.getElementById("randomizeDraftOrderButton"),
+  startDraftButton: document.getElementById("startDraftButton"),
+  stopDraftButton: document.getElementById("stopDraftButton"),
   teamAssignmentsButton: document.getElementById("teamAssignmentsButton"),
   teamAssignmentsView: document.getElementById("teamAssignmentsView"),
   teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
@@ -77,6 +91,7 @@ const ui = {
   teamsContainer: document.getElementById("teamsContainer"),
   playersContainer: document.getElementById("playersContainer"),
   draftFilterSelect: document.getElementById("draftFilterSelect"),
+  tribeFilterSelect: document.getElementById("tribeFilterSelect"),
   teamColumnsContainer: document.getElementById("teamColumnsContainer"),
   assignModal: document.getElementById("assignModal"),
   assignPlayerName: document.getElementById("assignPlayerName"),
@@ -89,6 +104,13 @@ const ui = {
   detailsAge: document.getElementById("detailsAge"),
   detailsTribe: document.getElementById("detailsTribe"),
   detailsSeasons: document.getElementById("detailsSeasons"),
+  tribeAssignSection: document.getElementById("tribeAssignSection"),
+  tribeAssignToggle: document.getElementById("tribeAssignToggle"),
+  tribeAssignPanel: document.getElementById("tribeAssignPanel"),
+  tribeSelect: document.getElementById("tribeSelect"),
+  newTribeName: document.getElementById("newTribeName"),
+  tribeColorSelect: document.getElementById("tribeColorSelect"),
+  saveTribeButton: document.getElementById("saveTribeButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
   detailsCloseTop: document.getElementById("detailsCloseTop"),
   detailsCloseBottom: document.getElementById("detailsCloseBottom")
@@ -150,6 +172,70 @@ function draftState(leagueId) {
   }
   if (!d.eliminationByPlayerId) d.eliminationByPlayerId = {};
   return d;
+}
+
+function ensureDraftConfig(ctx) {
+  const d = draftState(ctx.league.id);
+  if (!Array.isArray(d.draftOrderTeamIds) || d.draftOrderTeamIds.length !== ctx.teams.length) {
+    d.draftOrderTeamIds = ctx.teams.map((t) => t.id);
+  }
+  if (typeof d.currentPickIndex !== "number") d.currentPickIndex = 0;
+  if (typeof d.roundNumber !== "number") d.roundNumber = 1;
+  if (d.direction !== -1 && d.direction !== 1) d.direction = 1;
+  if (typeof d.isDraftActive !== "boolean") d.isDraftActive = false;
+  if (!Array.isArray(d.tribes)) d.tribes = [];
+  if (!d.tribeByPlayerId || typeof d.tribeByPlayerId !== "object") d.tribeByPlayerId = {};
+  return d;
+}
+
+function currentTurnTeamId(draft) {
+  if (!draft.isDraftActive) return null;
+  if (!Array.isArray(draft.draftOrderTeamIds) || draft.draftOrderTeamIds.length === 0) return null;
+  const idx = Math.max(0, Math.min(draft.draftOrderTeamIds.length - 1, Number(draft.currentPickIndex) || 0));
+  return draft.draftOrderTeamIds[idx] || null;
+}
+
+function advanceDraftTurn(draft) {
+  const total = Array.isArray(draft.draftOrderTeamIds) ? draft.draftOrderTeamIds.length : 0;
+  if (total === 0) return;
+  const picksMade = Object.keys(draft.assignmentByPlayerId || {}).length;
+  if (picksMade >= state.players.length) {
+    draft.isDraftActive = false;
+    draft.updatedAt = nowIso();
+    saveDb();
+    return;
+  }
+
+  const idx = Number(draft.currentPickIndex) || 0;
+  if (draft.direction === 1) {
+    if (idx >= total - 1) {
+      draft.direction = -1;
+      draft.roundNumber = (Number(draft.roundNumber) || 1) + 1;
+    } else {
+      draft.currentPickIndex = idx + 1;
+    }
+  } else {
+    if (idx <= 0) {
+      draft.direction = 1;
+      draft.roundNumber = (Number(draft.roundNumber) || 1) + 1;
+    } else {
+      draft.currentPickIndex = idx - 1;
+    }
+  }
+  draft.updatedAt = nowIso();
+  saveDb();
+}
+
+function teamForPick(ctx, draft) {
+  const teamId = currentTurnTeamId(draft);
+  if (!teamId) return null;
+  return ctx.teams.find((t) => t.id === teamId) || null;
+}
+
+function myTurn(ctx, draft) {
+  const mine = myTeam(ctx);
+  if (!mine) return false;
+  return currentTurnTeamId(draft) === mine.id;
 }
 
 async function loadPlayers() {
@@ -346,7 +432,7 @@ function renameTeam(ctx, teamId, name) {
 }
 
 function assignPlayer(ctx, playerId, teamIdOrNull) {
-  const draft = draftState(ctx.league.id);
+  const draft = ensureDraftConfig(ctx);
   const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
   const currentTeam = currentTeamId ? state.db.teams.find((t) => t.id === currentTeamId) : null;
 
@@ -364,16 +450,24 @@ function assignPlayer(ctx, playerId, teamIdOrNull) {
   if (currentTeam && currentTeam.id !== target.id && !canUnassignPlayer(ctx.user, ctx.membership, currentTeam)) {
     throw new Error("You can only edit your own team.");
   }
+  const wasUnassigned = !currentTeamId;
   draft.assignmentByPlayerId[playerId] = target.id;
   draft.updatedAt = nowIso();
   saveDb();
+  if (draft.isDraftActive && wasUnassigned) {
+    advanceDraftTurn(draft);
+  }
 }
 
 function claimPlayer(ctx, playerId) {
   if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
+  const draft = ensureDraftConfig(ctx);
+  if (draft.isDraftActive && !myTurn(ctx, draft)) {
+    throw new Error("It is not your turn.");
+  }
   const mine = myTeam(ctx);
   if (!mine) throw new Error("You are not assigned to a team.");
-  const currentTeamId = ctx.draft.assignmentByPlayerId[playerId] || null;
+  const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
   if (currentTeamId && currentTeamId !== mine.id) {
     throw new Error("This player is already claimed by another team.");
   }
@@ -455,11 +549,15 @@ function leagueRows(userId) {
 }
 
 function updateDraftSubview() {
-  const draft = state.currentSubview === "draft";
-  ui.draftLayout.classList.toggle("view-hidden", !draft);
-  ui.teamsColumnsView.classList.toggle("view-hidden", draft);
-  ui.draftViewButton.classList.toggle("active-view", draft);
-  ui.teamsViewButton.classList.toggle("active-view", !draft);
+  const isDraft = state.currentSubview === "draft";
+  const isTeams = state.currentSubview === "teams";
+  const isOrder = state.currentSubview === "order";
+  ui.draftLayout.classList.toggle("view-hidden", !isDraft);
+  ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
+  ui.draftOrderView.classList.toggle("view-hidden", !isOrder);
+  ui.draftViewButton.classList.toggle("active-view", isDraft);
+  ui.teamsViewButton.classList.toggle("active-view", isTeams);
+  ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
 }
 
 function ordinal(n) {
@@ -540,12 +638,15 @@ function openDetails(leagueId, playerId) {
   const ctx = ctxForLeague(leagueId);
   const p = state.players.find((x) => x.id === playerId);
   if (!ctx || !p) return;
+  const draft = ensureDraftConfig(ctx);
+  const tribe = tribeForPlayer(draft, playerId);
   state.detailsTargetPlayerId = playerId;
   ui.detailsPhoto.src = p.photoUrl;
   ui.detailsPhoto.alt = p.name;
   ui.detailsName.textContent = p.name;
   ui.detailsAge.textContent = p.age ?? "Unknown";
-  ui.detailsTribe.textContent = p.tribe ?? "Unknown";
+  ui.detailsTribe.textContent = tribe?.name || p.tribe || "Unknown";
+  applyTribeBorder(ui.detailsPhoto, tribe);
   ui.detailsSeasons.innerHTML = "";
   normalizeSeasons(p.seasons).forEach((s) => {
     const li = document.createElement("li");
@@ -556,6 +657,20 @@ function openDetails(leagueId, playerId) {
     const li = document.createElement("li");
     li.textContent = "No season data available yet.";
     ui.detailsSeasons.appendChild(li);
+  }
+  const isAdmin = ctx.membership.role === "admin";
+  ui.tribeAssignSection.classList.toggle("view-hidden", !isAdmin);
+  if (isAdmin) {
+    ui.tribeAssignPanel.classList.add("view-hidden");
+    ui.tribeSelect.innerHTML = `<option value="">None</option>`;
+    draft.tribes.forEach((t) => {
+      const opt = document.createElement("option");
+      opt.value = t.id;
+      opt.textContent = `${t.name} (${t.color})`;
+      ui.tribeSelect.appendChild(opt);
+    });
+    ui.tribeSelect.value = tribe?.id || "";
+    ui.newTribeName.value = "";
   }
   updateEliminateButton(ctx, playerId);
   ui.detailsModal.classList.remove("hidden");
@@ -616,6 +731,8 @@ function teamCard(ctx, team) {
 }
 
 function playerCard(ctx, p) {
+  const draft = ensureDraftConfig(ctx);
+  const tribe = tribeForPlayer(draft, p.id);
   const card = document.createElement("article");
   card.className = "player-card";
   const wrap = document.createElement("div");
@@ -625,6 +742,7 @@ function playerCard(ctx, p) {
   img.src = p.photoUrl;
   img.alt = p.name;
   img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
+  applyTribeBorder(img, tribe);
   wrap.appendChild(img);
   const badge = eliminationBadge(ctx.draft, p.id);
   if (badge) wrap.appendChild(badge);
@@ -645,7 +763,8 @@ function playerCard(ctx, p) {
     a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
   } else {
     a.textContent = "Claim";
-    a.disabled = !myTeam(ctx);
+    const draft = ensureDraftConfig(ctx);
+    a.disabled = !myTeam(ctx) || (draft.isDraftActive && !myTurn(ctx, draft));
     a.addEventListener("click", () => {
       try { claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
@@ -658,6 +777,7 @@ function playerCard(ctx, p) {
 }
 
 function teamColumn(ctx, team) {
+  const draft = ensureDraftConfig(ctx);
   const col = document.createElement("article");
   col.className = "team-column";
   const h = document.createElement("h3");
@@ -685,6 +805,7 @@ function teamColumn(ctx, team) {
     img.src = p.photoUrl;
     img.alt = p.name;
     img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
+    applyTribeBorder(img, tribeForPlayer(draft, p.id));
     wrap.appendChild(img);
     const badge = eliminationBadge(ctx.draft, p.id);
     if (badge) wrap.appendChild(badge);
@@ -805,9 +926,174 @@ function renderTeamAssignments(ctx) {
   });
 }
 
+function tribeForPlayer(draft, playerId) {
+  const tribeId = draft.tribeByPlayerId?.[playerId];
+  if (!tribeId) return null;
+  return (draft.tribes || []).find((t) => t.id === tribeId) || null;
+}
+
+function applyTribeBorder(imageEl, tribe) {
+  if (!imageEl) return;
+  if (!tribe) {
+    imageEl.classList.remove("tribe-border");
+    imageEl.style.removeProperty("--tribe-color");
+    return;
+  }
+  imageEl.classList.add("tribe-border");
+  imageEl.style.setProperty("--tribe-color", tribe.color || "#999");
+}
+
+function renderTurnBanner(ctx, draft) {
+  const turnTeam = teamForPick(ctx, draft);
+  if (!draft.isDraftActive || !turnTeam) {
+    ui.turnBanner.classList.add("view-hidden");
+    ui.turnPreview.classList.add("view-hidden");
+    state.showTurnPreview = false;
+    return;
+  }
+  ui.turnBanner.classList.remove("view-hidden");
+  ui.turnBanner.classList.add("clickable");
+  const mine = myTurn(ctx, draft);
+  ui.turnBanner.classList.toggle("not-turn", !mine);
+  ui.turnBannerText.textContent = mine
+    ? `Your turn - ${turnTeam.name} is drafting (Round ${draft.roundNumber})`
+    : `${turnTeam.name} is drafting (Round ${draft.roundNumber})`;
+
+  if (!state.showTurnPreview) {
+    ui.turnPreview.classList.add("view-hidden");
+    return;
+  }
+
+  ui.turnPreviewList.innerHTML = "";
+  const picks = nextDraftPositions(ctx, draft, 5);
+  picks.forEach((pick) => {
+    const li = document.createElement("li");
+    li.textContent = `${pick.teamName} (Round ${pick.round})`;
+    ui.turnPreviewList.appendChild(li);
+  });
+  ui.turnPreview.classList.remove("view-hidden");
+}
+
+function nextDraftPositions(ctx, draft, count) {
+  const order = Array.isArray(draft.draftOrderTeamIds) ? draft.draftOrderTeamIds : [];
+  if (!order.length) return [];
+  let idx = Math.max(0, Math.min(order.length - 1, Number(draft.currentPickIndex) || 0));
+  let direction = draft.direction === -1 ? -1 : 1;
+  let round = Number(draft.roundNumber) || 1;
+  const out = [];
+
+  for (let i = 0; i < count; i += 1) {
+    const teamId = order[idx];
+    const team = ctx.teams.find((t) => t.id === teamId);
+    out.push({ teamName: team ? team.name : `Team ${idx + 1}`, round });
+
+    if (direction === 1) {
+      if (idx >= order.length - 1) {
+        direction = -1;
+        round += 1;
+      } else {
+        idx += 1;
+      }
+    } else if (idx <= 0) {
+      direction = 1;
+      round += 1;
+    } else {
+      idx -= 1;
+    }
+  }
+
+  return out;
+}
+
+function moveDraftOrder(ctx, teamId, direction) {
+  const draft = ensureDraftConfig(ctx);
+  const i = draft.draftOrderTeamIds.indexOf(teamId);
+  if (i < 0) return;
+  const j = i + direction;
+  if (j < 0 || j >= draft.draftOrderTeamIds.length) return;
+  [draft.draftOrderTeamIds[i], draft.draftOrderTeamIds[j]] = [draft.draftOrderTeamIds[j], draft.draftOrderTeamIds[i]];
+  draft.updatedAt = nowIso();
+  saveDb();
+}
+
+function randomizeDraftOrder(ctx) {
+  const draft = ensureDraftConfig(ctx);
+  const arr = [...draft.draftOrderTeamIds];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  draft.draftOrderTeamIds = arr;
+  draft.updatedAt = nowIso();
+  saveDb();
+}
+
+function startDraft(ctx) {
+  const draft = ensureDraftConfig(ctx);
+  draft.assignmentByPlayerId = {};
+  draft.eliminationByPlayerId = {};
+  draft.currentPickIndex = 0;
+  draft.roundNumber = 1;
+  draft.direction = 1;
+  draft.isDraftActive = true;
+  draft.updatedAt = nowIso();
+  saveDb();
+}
+
+function stopDraft(ctx) {
+  const draft = ensureDraftConfig(ctx);
+  draft.isDraftActive = false;
+  draft.updatedAt = nowIso();
+  saveDb();
+}
+
+function renderDraftOrderCard(ctx, draft) {
+  ui.draftOrderList.innerHTML = "";
+  const isAdmin = ctx.membership.role === "admin";
+  const turnTeam = teamForPick(ctx, draft);
+  ui.draftTurnStatus.textContent = draft.isDraftActive && turnTeam
+    ? `Draft Active: ${turnTeam.name} is on the clock (Round ${draft.roundNumber})`
+    : "Draft is not active.";
+
+  draft.draftOrderTeamIds.forEach((teamId, index) => {
+    const team = ctx.teams.find((t) => t.id === teamId);
+    if (!team) return;
+    const row = document.createElement("div");
+    row.className = "draft-order-item";
+    const label = document.createElement("span");
+    label.textContent = `${index + 1}. ${team.name}`;
+    row.appendChild(label);
+    const controls = document.createElement("div");
+    controls.className = "draft-order-controls";
+    const up = document.createElement("button");
+    up.type = "button";
+    up.className = "secondary";
+    up.textContent = "Up";
+    up.disabled = !isAdmin || index === 0 || draft.isDraftActive;
+    up.addEventListener("click", () => { moveDraftOrder(ctx, teamId, -1); render(); });
+    const down = document.createElement("button");
+    down.type = "button";
+    down.className = "secondary";
+    down.textContent = "Down";
+    down.disabled = !isAdmin || index === draft.draftOrderTeamIds.length - 1 || draft.isDraftActive;
+    down.addEventListener("click", () => { moveDraftOrder(ctx, teamId, 1); render(); });
+    controls.appendChild(up);
+    controls.appendChild(down);
+    row.appendChild(controls);
+    ui.draftOrderList.appendChild(row);
+  });
+
+  ui.randomizeDraftOrderButton.disabled = !isAdmin || draft.isDraftActive;
+  ui.startDraftButton.disabled = !isAdmin || draft.isDraftActive;
+  ui.startDraftButton.classList.toggle("view-hidden", draft.isDraftActive);
+  ui.stopDraftButton.classList.toggle("view-hidden", !draft.isDraftActive);
+  ui.stopDraftButton.disabled = !isAdmin || !draft.isDraftActive;
+}
+
 function renderLeague(leagueId) {
   const ctx = ctxForLeague(leagueId);
   if (!ctx) { msg("leagues", "League not found or access denied."); go("#/leagues"); return; }
+  const draft = ensureDraftConfig(ctx);
   toggleView("league");
   ui.leagueTitle.textContent = ctx.league.name;
   const myTeam = ctx.membership.teamId ? ctx.teams.find((t) => t.id === ctx.membership.teamId) : null;
@@ -816,10 +1102,14 @@ function renderLeague(leagueId) {
   ui.resetButton.classList.toggle("view-hidden", !canResetLeague(ctx.user, ctx.membership, ctx.league));
 
   const isAdmin = ctx.membership.role === "admin";
+  if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
+  ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
+  renderDraftOrderCard(ctx, draft);
+  renderTurnBanner(ctx, draft);
   if (!isAdmin) state.showTeamAssignments = false;
   ui.teamAssignmentsButton.classList.toggle("view-hidden", !isAdmin);
   ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
-  ui.teamAssignmentsView.classList.toggle("view-hidden", !(isAdmin && state.showTeamAssignments));
+  ui.teamAssignmentsView.classList.toggle("view-hidden", !(isAdmin && state.showTeamAssignments && state.currentSubview !== "order"));
   if (isAdmin && state.showTeamAssignments) {
     renderTeamAssignments(ctx);
   }
@@ -829,7 +1119,23 @@ function renderLeague(leagueId) {
   ui.playersContainer.innerHTML = "";
   ui.teamColumnsContainer.innerHTML = "";
   ctx.teams.forEach((t) => ui.teamsContainer.appendChild(teamCard(ctx, t)));
-  const unassignedPlayers = sortDraftPlayers(state.players.filter((p) => !ctx.draft.assignmentByPlayerId[p.id]));
+  ui.tribeFilterSelect.innerHTML = `<option value="all">All Tribes</option>`;
+  draft.tribes.forEach((tribe) => {
+    const opt = document.createElement("option");
+    opt.value = tribe.id;
+    opt.textContent = tribe.name;
+    ui.tribeFilterSelect.appendChild(opt);
+  });
+  if (state.tribeFilter !== "all" && !draft.tribes.some((t) => t.id === state.tribeFilter)) {
+    state.tribeFilter = "all";
+  }
+  ui.tribeFilterSelect.value = state.tribeFilter;
+
+  const unassignedPlayers = sortDraftPlayers(
+    state.players
+      .filter((p) => !draft.assignmentByPlayerId[p.id])
+      .filter((p) => state.tribeFilter === "all" || (draft.tribeByPlayerId[p.id] || "") === state.tribeFilter),
+  );
   ui.draftFilterSelect.value = state.draftFilter;
   if (unassignedPlayers.length === 0) {
     const empty = document.createElement("p");
@@ -913,6 +1219,56 @@ function wire() {
   });
 
   ui.backToLeaguesButton.addEventListener("click", () => go("#/leagues"));
+  ui.copyInviteCodeButton.addEventListener("click", async () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx) return;
+    try {
+      await navigator.clipboard.writeText(ctx.league.inviteCode);
+      msg("league", "Invite code copied!");
+    } catch {
+      msg("league", "Unable to copy invite code.");
+    }
+  });
+  ui.turnBanner.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx) return;
+    const draft = ensureDraftConfig(ctx);
+    if (!draft.isDraftActive) return;
+    state.showTurnPreview = !state.showTurnPreview;
+    render();
+  });
+  ui.randomizeDraftOrderButton.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    randomizeDraftOrder(ctx);
+    msg("league", "Draft order randomized.");
+    render();
+  });
+  ui.startDraftButton.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    if (!confirm("Start draft and reset all assignments?")) return;
+    startDraft(ctx);
+    msg("league", "Draft started.");
+    render();
+  });
+  ui.stopDraftButton.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    stopDraft(ctx);
+    msg("league", "Draft stopped. Order is locked as-is.");
+    render();
+  });
   ui.teamAssignmentsButton.addEventListener("click", () => {
     const r = route();
     if (r.name !== "league") return;
@@ -924,8 +1280,14 @@ function wire() {
   });
   ui.draftViewButton.addEventListener("click", () => { state.currentSubview = "draft"; updateDraftSubview(); });
   ui.teamsViewButton.addEventListener("click", () => { state.currentSubview = "teams"; updateDraftSubview(); });
+  ui.draftOrderNavButton.addEventListener("click", () => { state.currentSubview = "order"; updateDraftSubview(); });
   ui.draftFilterSelect.addEventListener("change", () => {
     state.draftFilter = ui.draftFilterSelect.value === "season" ? "season" : "alpha";
+    const r = route();
+    if (r.name === "league") render();
+  });
+  ui.tribeFilterSelect.addEventListener("change", () => {
+    state.tribeFilter = ui.tribeFilterSelect.value || "all";
     const r = route();
     if (r.name === "league") render();
   });
@@ -971,6 +1333,40 @@ function wire() {
   ui.detailsCloseTop.addEventListener("click", closeDetails);
   ui.detailsCloseBottom.addEventListener("click", closeDetails);
   ui.detailsModal.addEventListener("click", (e) => { if (e.target === ui.detailsModal) closeDetails(); });
+  ui.tribeAssignToggle.addEventListener("click", () => {
+    ui.tribeAssignPanel.classList.toggle("view-hidden");
+  });
+  ui.saveTribeButton.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league" || !state.detailsTargetPlayerId) return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    const draft = ensureDraftConfig(ctx);
+
+    let selectedTribeId = ui.tribeSelect.value || "";
+    const newName = String(ui.newTribeName.value || "").trim();
+    if (newName) {
+      const exists = draft.tribes.find((t) => normalizeName(t.name) === normalizeName(newName));
+      if (exists) {
+        selectedTribeId = exists.id;
+      } else {
+        const tribe = { id: id("tribe"), name: newName, color: ui.tribeColorSelect.value || "#e53935" };
+        draft.tribes.push(tribe);
+        selectedTribeId = tribe.id;
+      }
+    }
+    if (selectedTribeId) {
+      draft.tribeByPlayerId[state.detailsTargetPlayerId] = selectedTribeId;
+    } else {
+      delete draft.tribeByPlayerId[state.detailsTargetPlayerId];
+    }
+    draft.updatedAt = nowIso();
+    saveDb();
+    ui.tribeAssignPanel.classList.add("view-hidden");
+    msg("league", "Tribe assignment saved.");
+    render();
+    openDetails(r.leagueId, state.detailsTargetPlayerId);
+  });
 }
 
 async function init() {

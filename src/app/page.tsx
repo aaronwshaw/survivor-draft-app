@@ -60,17 +60,6 @@ export default function Home() {
             </section>
 
             <section className="card">
-              <h3>Create League</h3>
-              <form id="createLeagueForm" className="form-grid">
-                <label>
-                  League Name
-                  <input id="createLeagueName" type="text" required placeholder="Family Survivor Pool" />
-                </label>
-                <button type="submit">Create League</button>
-              </form>
-            </section>
-
-            <section className="card">
               <h3>Join League</h3>
               <form id="joinLeagueForm" className="form-grid">
                 <label>
@@ -80,16 +69,40 @@ export default function Home() {
                 <button type="submit">Join League</button>
               </form>
             </section>
+
+            <section className="card">
+              <h3>Create League</h3>
+              <form id="createLeagueForm" className="form-grid">
+                <label>
+                  League Name
+                  <input id="createLeagueName" type="text" required placeholder="Family Survivor Pool" />
+                </label>
+                <button type="submit">Create League</button>
+              </form>
+            </section>
           </div>
           <p id="leaguesMessage" className="message" />
         </section>
 
         <section id="leagueView" className="page-view view-hidden" aria-labelledby="leagueTitle">
+          <section id="turnBanner" className="turn-banner view-hidden" aria-live="polite">
+            <span id="turnBannerText" />
+          </section>
+          <section id="turnPreview" className="turn-preview view-hidden" aria-live="polite">
+            <h4>Next 5 Picks</h4>
+            <ol id="turnPreviewList" />
+          </section>
+
           <div className="league-topbar card">
             <div>
               <h2 id="leagueTitle" />
               <p id="leagueMeta" className="muted" />
-              <p id="leagueInviteCode" className="muted" />
+              <div className="invite-row">
+                <p id="leagueInviteCode" className="muted" />
+                <button id="copyInviteCodeButton" type="button" className="secondary">
+                  Copy Invite Code
+                </button>
+              </div>
             </div>
             <div className="header-actions">
               <button id="backToLeaguesButton" className="secondary" type="button">
@@ -97,6 +110,9 @@ export default function Home() {
               </button>
               <button id="teamAssignmentsButton" className="secondary view-hidden" type="button">
                 Team Assignments
+              </button>
+              <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
+                Draft Order
               </button>
               <div className="view-toggle">
                 <button id="draftViewButton" className="secondary active-view" type="button">
@@ -111,6 +127,24 @@ export default function Home() {
               </button>
             </div>
           </div>
+
+          <section id="draftOrderView" className="card view-hidden" aria-labelledby="draftAdminTitle">
+            <h3 id="draftAdminTitle">Draft Order Management</h3>
+            <p className="muted">Set the team order, randomize, and start a snake draft.</p>
+            <div id="draftTurnStatus" className="message" />
+            <div id="draftOrderList" className="draft-order-list" />
+            <div className="button-row">
+              <button id="randomizeDraftOrderButton" type="button" className="secondary">
+                Randomize Order
+              </button>
+              <button id="startDraftButton" type="button">
+                Start Draft
+              </button>
+              <button id="stopDraftButton" type="button" className="danger-button view-hidden">
+                Stop Draft
+              </button>
+            </div>
+          </section>
 
           <p id="leagueMessage" className="message" />
 
@@ -140,13 +174,21 @@ export default function Home() {
             <section className="pool-panel" aria-labelledby="playersTitle">
               <div className="panel-head">
                 <h3 id="playersTitle">Player Pool</h3>
-                <label className="inline-filter" htmlFor="draftFilterSelect">
-                  Sort
-                  <select id="draftFilterSelect">
-                    <option value="alpha">Alphabetical</option>
-                    <option value="season">First Season</option>
-                  </select>
-                </label>
+                <div className="filters-inline">
+                  <label className="inline-filter" htmlFor="draftFilterSelect">
+                    Sort
+                    <select id="draftFilterSelect">
+                      <option value="alpha">Alphabetical</option>
+                      <option value="season">First Season</option>
+                    </select>
+                  </label>
+                  <label className="inline-filter" htmlFor="tribeFilterSelect">
+                    Tribe
+                    <select id="tribeFilterSelect">
+                      <option value="all">All Tribes</option>
+                    </select>
+                  </label>
+                </div>
               </div>
               <div id="playersContainer" className="players-grid" />
             </section>
@@ -193,6 +235,41 @@ export default function Home() {
           </p>
           <h4>Seasons</h4>
           <ul id="detailsSeasons" />
+          <section id="tribeAssignSection" className="view-hidden">
+            <button id="tribeAssignToggle" type="button" className="secondary">
+              Tribe Assignment
+            </button>
+            <div id="tribeAssignPanel" className="tribe-assign-panel view-hidden">
+              <div className="form-grid">
+                <label>
+                  Existing Tribe
+                  <select id="tribeSelect">
+                    <option value="">None</option>
+                  </select>
+                </label>
+                <label>
+                  New Tribe Name
+                  <input id="newTribeName" type="text" placeholder="Create new tribe" />
+                </label>
+                <label>
+                  Tribe Color
+                  <select id="tribeColorSelect">
+                    <option value="#e53935">Red</option>
+                    <option value="#1e88e5">Blue</option>
+                    <option value="#43a047">Green</option>
+                    <option value="#fbc02d">Yellow</option>
+                    <option value="#8e24aa">Purple</option>
+                    <option value="#fb8c00">Orange</option>
+                    <option value="#00897b">Teal</option>
+                    <option value="#6d4c41">Brown</option>
+                  </select>
+                </label>
+                <button id="saveTribeButton" type="button" className="secondary">
+                  Save Tribe
+                </button>
+              </div>
+            </div>
+          </section>
           <div className="modal-actions">
             <button id="detailsEliminateButton" type="button" className="danger-button">
               Eliminated
