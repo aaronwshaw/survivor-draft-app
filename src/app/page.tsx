@@ -254,14 +254,14 @@ export default function Home() {
                 <label>
                   Tribe Color
                   <select id="tribeColorSelect">
-                    <option value="#e53935">■</option>
-                    <option value="#1e88e5">■</option>
-                    <option value="#43a047">■</option>
-                    <option value="#fbc02d">■</option>
-                    <option value="#8e24aa">■</option>
-                    <option value="#fb8c00">■</option>
-                    <option value="#00897b">■</option>
-                    <option value="#6d4c41">■</option>
+                    <option value="#e53935">Red</option>
+                    <option value="#1e88e5">Blue</option>
+                    <option value="#43a047">Green</option>
+                    <option value="#fbc02d">Yellow</option>
+                    <option value="#8e24aa">Purple</option>
+                    <option value="#fb8c00">Orange</option>
+                    <option value="#00897b">Teal</option>
+                    <option value="#6d4c41">Brown</option>
                   </select>
                 </label>
                 <button id="saveTribeButton" type="button" className="secondary">

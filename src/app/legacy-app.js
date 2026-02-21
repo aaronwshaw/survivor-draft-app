@@ -155,7 +155,7 @@ function styleTribeColorOptions() {
   if (!ui.tribeColorSelect) return;
   Array.from(ui.tribeColorSelect.options).forEach((option) => {
     option.style.color = option.value;
-    option.textContent = "■";
+    option.textContent = `■■  ${option.textContent || ""}`.trim();
   });
 }
 
