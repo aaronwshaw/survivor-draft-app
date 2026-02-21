@@ -151,6 +151,14 @@ function msg(view, text) {
   ui.leagueMessage.textContent = view === "league" ? text : "";
 }
 
+function styleTribeColorOptions() {
+  if (!ui.tribeColorSelect) return;
+  Array.from(ui.tribeColorSelect.options).forEach((option) => {
+    option.style.color = option.value;
+    option.textContent = "■";
+  });
+}
+
 function setAuthMode(mode) {
   state.authMode = mode === "signup" ? "signup" : "login";
   const isSignup = state.authMode === "signup";
@@ -693,7 +701,8 @@ function openDetails(leagueId, playerId) {
     draft.tribes.forEach((t) => {
       const opt = document.createElement("option");
       opt.value = t.id;
-      opt.textContent = `${t.name} (${t.color})`;
+      opt.textContent = `■ ${t.name}`;
+      opt.style.color = t.color || "#111";
       ui.tribeSelect.appendChild(opt);
     });
     ui.tribeSelect.value = tribe?.id || "";
@@ -1398,6 +1407,7 @@ async function init() {
   state.players = await loadPlayers();
   state.db = loadDb();
   state.session = loadSession();
+  styleTribeColorOptions();
   await syncDb().catch(() => {
     state.db = loadDb();
   });

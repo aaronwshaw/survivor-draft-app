@@ -381,7 +381,11 @@ select {
 }
 
 .tribe-border {
-  border: 4px solid var(--tribe-color, var(--line));
+  border: 7px solid var(--tribe-color, var(--line));
+}
+
+#tribeColorSelect {
+  font-size: 1.05rem;
 }
 
 .player-photo.missing {
