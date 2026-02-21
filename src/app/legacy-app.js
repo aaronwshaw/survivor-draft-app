@@ -40,6 +40,7 @@ const state = {
   tribeFilter: "all",
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null,
+  teamsViewTeamId: null,
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0
@@ -128,6 +129,10 @@ function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
 const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [] };
 
+function isMobileLayout() {
+  return typeof window !== "undefined" && window.innerWidth <= 768;
+}
+
 async function apiJson(url, options) {
   const response = await fetch(url, {
     headers: { "Content-Type": "application/json" },
@@ -215,7 +220,7 @@ function styleTribeColorOptions() {
   if (!ui.tribeColorSelect) return;
   Array.from(ui.tribeColorSelect.options).forEach((option) => {
     option.style.color = option.value;
-    option.textContent = `■■  ${option.textContent || ""}`.trim();
+    option.textContent = `[] ${option.textContent || ""}`.trim();
   });
 }
 
@@ -909,6 +914,129 @@ function teamColumn(ctx, team) {
   return col;
 }
 
+function playersForTeam(ctx, teamId) {
+  const pids = Object.entries(ctx.draft.assignmentByPlayerId)
+    .filter(([, t]) => t === teamId)
+    .map(([pid]) => pid);
+  return pids.map((pid) => state.players.find((x) => x.id === pid)).filter(Boolean);
+}
+
+function teamListCard(ctx, team) {
+  const card = document.createElement("article");
+  card.className = "team-list-card";
+  const title = document.createElement("h4");
+  title.textContent = team.name;
+  card.appendChild(title);
+
+  const names = playersForTeam(ctx, team.id);
+  const roster = document.createElement("ul");
+  roster.className = "team-list-roster";
+  if (!names.length) {
+    const li = document.createElement("li");
+    li.className = "empty-state";
+    li.textContent = "No players assigned";
+    roster.appendChild(li);
+  } else {
+    names.forEach((player) => {
+      const li = document.createElement("li");
+      li.textContent = player.name;
+      roster.appendChild(li);
+    });
+  }
+  card.appendChild(roster);
+
+  const open = document.createElement("button");
+  open.type = "button";
+  open.className = "secondary";
+  open.textContent = "Open Team";
+  open.addEventListener("click", () => {
+    state.teamsViewTeamId = team.id;
+    render();
+  });
+  card.appendChild(open);
+  return card;
+}
+
+function teamDetailCard(ctx, player) {
+  const draft = ensureDraftConfig(ctx);
+  const tribe = tribeForPlayer(draft, player.id);
+  const card = document.createElement("article");
+  card.className = "player-card";
+  const wrap = document.createElement("div");
+  wrap.className = "photo-wrap";
+  const img = document.createElement("img");
+  img.className = "player-photo";
+  img.src = player.photoUrl;
+  img.alt = player.name;
+  img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  applyTribeBorder(img, tribe);
+  wrap.appendChild(img);
+  const badge = eliminationBadge(ctx.draft, player.id);
+  if (badge) wrap.appendChild(badge);
+  card.appendChild(wrap);
+  const h = document.createElement("h3");
+  h.textContent = player.name;
+  card.appendChild(h);
+  const actions = document.createElement("div");
+  actions.className = "card-actions";
+  const d = document.createElement("button");
+  d.className = "secondary";
+  d.textContent = "Details";
+  d.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  actions.appendChild(d);
+  card.appendChild(actions);
+  return card;
+}
+
+function renderTeamsSubview(ctx) {
+  ui.teamColumnsContainer.innerHTML = "";
+  if (!isMobileLayout()) {
+    ctx.teams.forEach((team) => ui.teamColumnsContainer.appendChild(teamColumn(ctx, team)));
+    return;
+  }
+
+  if (!state.teamsViewTeamId) {
+    ctx.teams.forEach((team) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, team)));
+    return;
+  }
+
+  const team = ctx.teams.find((item) => item.id === state.teamsViewTeamId);
+  if (!team) {
+    state.teamsViewTeamId = null;
+    ctx.teams.forEach((item) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, item)));
+    return;
+  }
+
+  const header = document.createElement("div");
+  header.className = "team-detail-head";
+  const back = document.createElement("button");
+  back.type = "button";
+  back.className = "secondary";
+  back.textContent = "Back to Teams";
+  back.addEventListener("click", () => {
+    state.teamsViewTeamId = null;
+    render();
+  });
+  const title = document.createElement("h4");
+  title.textContent = team.name;
+  header.appendChild(back);
+  header.appendChild(title);
+  ui.teamColumnsContainer.appendChild(header);
+
+  const grid = document.createElement("div");
+  grid.className = "team-detail-grid";
+  const players = playersForTeam(ctx, team.id);
+  if (!players.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No players assigned.";
+    grid.appendChild(empty);
+  } else {
+    players.forEach((player) => grid.appendChild(teamDetailCard(ctx, player)));
+  }
+  ui.teamColumnsContainer.appendChild(grid);
+}
+
 function firstSeasonNumber(player) {
   const seasons = normalizeSeasons(player.seasons);
   const nums = seasons
@@ -1188,6 +1316,13 @@ function renderLeague(leagueId) {
     renderTeamAssignments(ctx);
   }
 
+  ui.teamsViewButton.textContent = isMobileLayout() ? "Teams View" : "Teams Photo View";
+  const teamsTitle = document.getElementById("teamsColumnsTitle");
+  if (teamsTitle) {
+    teamsTitle.textContent = isMobileLayout() ? "Teams View" : "Teams Split View (8 Columns)";
+  }
+  ui.teamColumnsContainer.className = isMobileLayout() ? "team-list-grid" : "team-columns-grid";
+
   updateDraftSubview();
   ui.teamsContainer.innerHTML = "";
   ui.playersContainer.innerHTML = "";
@@ -1219,24 +1354,29 @@ function renderLeague(leagueId) {
   } else {
     unassignedPlayers.forEach((p) => ui.playersContainer.appendChild(playerCard(ctx, p)));
   }
-  ctx.teams.forEach((t) => ui.teamColumnsContainer.appendChild(teamColumn(ctx, t)));
+  renderTeamsSubview(ctx);
 }
 
 function render() {
   renderAuth();
   const r = route();
   const user = currentUser();
-  if (!user && r.name !== "login") { clearLiveSync(); go("#/login"); return; }
-  if (user && r.name === "login") { clearLiveSync(); go("#/leagues"); return; }
-  if (r.name === "login") { clearLiveSync(); toggleView("login"); return; }
-  if (r.name === "leagues") { clearLiveSync(); renderLeagues(); return; }
+  if (!user && r.name !== "login") { clearLiveSync(); state.teamsViewTeamId = null; go("#/login"); return; }
+  if (user && r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; go("#/leagues"); return; }
+  if (r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; toggleView("login"); return; }
+  if (r.name === "leagues") { clearLiveSync(); state.teamsViewTeamId = null; renderLeagues(); return; }
   if (r.name === "league") { renderLeague(r.leagueId); ensureLiveSync(); return; }
   clearLiveSync();
+  state.teamsViewTeamId = null;
   toggleView("login");
 }
 
 function wire() {
   window.addEventListener("hashchange", () => { msg("", ""); render(); });
+  window.addEventListener("resize", () => {
+    const r = route();
+    if (r.name === "league") render();
+  });
   ui.topMenuToggle.addEventListener("click", () => {
     ui.topBarMenu.classList.toggle("open");
   });
@@ -1377,9 +1517,19 @@ function wire() {
     ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
     render();
   });
-  ui.draftViewButton.addEventListener("click", () => { state.currentSubview = "draft"; updateDraftSubview(); });
-  ui.teamsViewButton.addEventListener("click", () => { state.currentSubview = "teams"; updateDraftSubview(); });
-  ui.draftOrderNavButton.addEventListener("click", () => { state.currentSubview = "order"; updateDraftSubview(); });
+  ui.draftViewButton.addEventListener("click", () => {
+    state.currentSubview = "draft";
+    render();
+  });
+  ui.teamsViewButton.addEventListener("click", () => {
+    state.currentSubview = "teams";
+    state.teamsViewTeamId = null;
+    render();
+  });
+  ui.draftOrderNavButton.addEventListener("click", () => {
+    state.currentSubview = "order";
+    render();
+  });
   ui.draftFilterSelect.addEventListener("change", () => {
     state.draftFilter = ui.draftFilterSelect.value === "season" ? "season" : "alpha";
     const r = route();
@@ -1485,3 +1635,4 @@ if (!window.__SURVIVOR_LEGACY_BOOTED__) {
 }
 
 export {};
+
