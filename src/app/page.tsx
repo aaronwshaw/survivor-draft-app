@@ -23,6 +23,9 @@ export default function Home() {
             <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
               Draft Order
             </button>
+            <button id="yourTeamViewButton" className="secondary" type="button">
+              Your Team
+            </button>
             <div className="view-toggle">
               <button id="draftViewButton" className="secondary active-view" type="button">
                 Draft View
@@ -124,7 +127,7 @@ export default function Home() {
             <ol id="turnPreviewList" />
           </section>
 
-          <div className="league-topbar card">
+          <div id="leagueInfoCard" className="league-topbar card view-hidden">
             <div>
               <h2 id="leagueTitle" />
               <p id="leagueMeta" className="muted" />
@@ -153,6 +156,23 @@ export default function Home() {
                 Stop Draft
               </button>
             </div>
+          </section>
+
+          <section id="yourTeamView" className="card view-hidden" aria-label="Your team">
+            <div className="your-team-edit">
+              <h4 id="yourTeamNameDisplay" className="your-team-name" />
+              <input id="yourTeamNameInput" type="text" className="view-hidden" />
+              <div className="button-row">
+                <button id="editTeamNameButton" type="button" className="secondary">
+                  Edit Team Name
+                </button>
+                <button id="saveTeamNameButton" type="button" className="view-hidden">
+                  Save Team Name
+                </button>
+              </div>
+            </div>
+            <p id="yourTeamMeta" className="muted" />
+            <div id="yourTeamPlayers" className="players-grid" />
           </section>
 
           <p id="leagueMessage" className="message" />

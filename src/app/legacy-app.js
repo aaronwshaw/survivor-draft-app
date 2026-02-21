@@ -41,6 +41,7 @@ const state = {
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null,
   teamsViewTeamId: null,
+  isEditingTeamName: false,
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0
@@ -70,6 +71,7 @@ const ui = {
   joinLeagueCode: document.getElementById("joinLeagueCode"),
   leagueTitle: document.getElementById("leagueTitle"),
   leagueMeta: document.getElementById("leagueMeta"),
+  leagueInfoCard: document.getElementById("leagueInfoCard"),
   leagueInviteCode: document.getElementById("leagueInviteCode"),
   copyInviteCodeButton: document.getElementById("copyInviteCodeButton"),
   turnBanner: document.getElementById("turnBanner"),
@@ -89,9 +91,17 @@ const ui = {
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
   draftViewButton: document.getElementById("draftViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
+  yourTeamViewButton: document.getElementById("yourTeamViewButton"),
   resetButton: document.getElementById("resetButton"),
   draftLayout: document.getElementById("draftLayout"),
   teamsColumnsView: document.getElementById("teamsColumnsView"),
+  yourTeamView: document.getElementById("yourTeamView"),
+  yourTeamNameDisplay: document.getElementById("yourTeamNameDisplay"),
+  yourTeamNameInput: document.getElementById("yourTeamNameInput"),
+  yourTeamMeta: document.getElementById("yourTeamMeta"),
+  yourTeamPlayers: document.getElementById("yourTeamPlayers"),
+  editTeamNameButton: document.getElementById("editTeamNameButton"),
+  saveTeamNameButton: document.getElementById("saveTeamNameButton"),
   teamsContainer: document.getElementById("teamsContainer"),
   playersContainer: document.getElementById("playersContainer"),
   draftFilterSelect: document.getElementById("draftFilterSelect"),
@@ -476,14 +486,22 @@ function myTeam(ctx) {
   return ctx.teams.find((t) => t.id === ctx.membership.teamId) || null;
 }
 
-function renameTeam(ctx, teamId, name) {
+async function renameTeam(ctx, teamId, name) {
   const team = state.db.teams.find((t) => t.id === teamId && t.leagueId === ctx.league.id);
   if (!team) throw new Error("Team not found.");
   if (!canRenameTeam(ctx.user, ctx.membership, team)) throw new Error("You can only edit your own team.");
   const trimmed = String(name || "").trim();
-  if (!trimmed) return;
-  team.name = trimmed;
-  saveDb();
+  if (!trimmed) throw new Error("Team name is required.");
+  await apiJson("/api/legacy/team/rename", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      teamId: team.id,
+      name: trimmed,
+    }),
+  });
+  await syncDb();
 }
 
 async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
@@ -646,12 +664,16 @@ function updateDraftSubview() {
   const isDraft = state.currentSubview === "draft";
   const isTeams = state.currentSubview === "teams";
   const isOrder = state.currentSubview === "order";
+  const isYourTeam = state.currentSubview === "yourteam";
   ui.draftLayout.classList.toggle("view-hidden", !isDraft);
   ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
   ui.draftOrderView.classList.toggle("view-hidden", !isOrder);
+  ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
+  ui.leagueInfoCard.classList.toggle("view-hidden", !isYourTeam);
   ui.draftViewButton.classList.toggle("active-view", isDraft);
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
+  ui.yourTeamViewButton.classList.toggle("active-view", isYourTeam);
 }
 
 function ordinal(n) {
@@ -779,15 +801,10 @@ function closeDetails() {
 function teamCard(ctx, team) {
   const card = document.createElement("article");
   card.className = "team-card";
-  const input = document.createElement("input");
-  input.className = "team-name-input";
-  input.value = team.name;
-  input.disabled = !canRenameTeam(ctx.user, ctx.membership, team);
-  input.addEventListener("change", (e) => {
-    try { renameTeam(ctx, team.id, e.target.value); render(); }
-    catch (err) { msg("league", err.message); render(); }
-  });
-  card.appendChild(input);
+  const title = document.createElement("h4");
+  title.className = "team-name-text";
+  title.textContent = team.name;
+  card.appendChild(title);
   const owner = document.createElement("p");
   owner.className = "muted";
   owner.textContent = team.ownerUserId ? `Owner: ${(state.db.users.find((u) => u.id === team.ownerUserId) || {}).displayName || "Unknown"}` : "Owner: Unclaimed";
@@ -1035,6 +1052,43 @@ function renderTeamsSubview(ctx) {
     players.forEach((player) => grid.appendChild(teamDetailCard(ctx, player)));
   }
   ui.teamColumnsContainer.appendChild(grid);
+}
+
+function renderYourTeamView(ctx) {
+  ui.yourTeamPlayers.innerHTML = "";
+  const team = myTeam(ctx);
+  if (!team) {
+    ui.yourTeamMeta.textContent = "You are not currently assigned to a team.";
+    ui.yourTeamNameDisplay.textContent = "No team assigned";
+    ui.yourTeamNameInput.value = "";
+    ui.yourTeamNameInput.classList.add("view-hidden");
+    ui.yourTeamNameDisplay.classList.remove("view-hidden");
+    ui.editTeamNameButton.disabled = true;
+    ui.editTeamNameButton.classList.remove("view-hidden");
+    ui.saveTeamNameButton.classList.add("view-hidden");
+    return;
+  }
+
+  ui.yourTeamNameDisplay.textContent = team.name || "";
+  ui.yourTeamNameInput.value = team.name || "";
+  ui.yourTeamNameInput.classList.toggle("view-hidden", !state.isEditingTeamName);
+  ui.yourTeamNameDisplay.classList.toggle("view-hidden", state.isEditingTeamName);
+  ui.editTeamNameButton.disabled = state.isEditingTeamName;
+  ui.editTeamNameButton.classList.toggle("view-hidden", state.isEditingTeamName);
+  ui.saveTeamNameButton.classList.toggle("view-hidden", !state.isEditingTeamName);
+  ui.yourTeamMeta.textContent = `Team ${team.slotNumber} | Owner: ${
+    (state.db.users.find((u) => u.id === team.ownerUserId) || {}).displayName || "Unknown"
+  }`;
+
+  const players = playersForTeam(ctx, team.id);
+  if (!players.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No players assigned yet.";
+    ui.yourTeamPlayers.appendChild(empty);
+    return;
+  }
+  players.forEach((player) => ui.yourTeamPlayers.appendChild(teamDetailCard(ctx, player)));
 }
 
 function firstSeasonNumber(player) {
@@ -1355,19 +1409,21 @@ function renderLeague(leagueId) {
     unassignedPlayers.forEach((p) => ui.playersContainer.appendChild(playerCard(ctx, p)));
   }
   renderTeamsSubview(ctx);
+  renderYourTeamView(ctx);
 }
 
 function render() {
   renderAuth();
   const r = route();
   const user = currentUser();
-  if (!user && r.name !== "login") { clearLiveSync(); state.teamsViewTeamId = null; go("#/login"); return; }
-  if (user && r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; go("#/leagues"); return; }
-  if (r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; toggleView("login"); return; }
-  if (r.name === "leagues") { clearLiveSync(); state.teamsViewTeamId = null; renderLeagues(); return; }
+  if (!user && r.name !== "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/login"); return; }
+  if (user && r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/leagues"); return; }
+  if (r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; toggleView("login"); return; }
+  if (r.name === "leagues") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; renderLeagues(); return; }
   if (r.name === "league") { renderLeague(r.leagueId); ensureLiveSync(); return; }
   clearLiveSync();
   state.teamsViewTeamId = null;
+  state.isEditingTeamName = false;
   toggleView("login");
 }
 
@@ -1519,16 +1575,52 @@ function wire() {
   });
   ui.draftViewButton.addEventListener("click", () => {
     state.currentSubview = "draft";
+    state.isEditingTeamName = false;
+    ui.topBarMenu.classList.remove("open");
     render();
   });
   ui.teamsViewButton.addEventListener("click", () => {
     state.currentSubview = "teams";
     state.teamsViewTeamId = null;
+    state.isEditingTeamName = false;
+    ui.topBarMenu.classList.remove("open");
+    render();
+  });
+  ui.yourTeamViewButton.addEventListener("click", () => {
+    state.currentSubview = "yourteam";
+    state.isEditingTeamName = false;
+    ui.topBarMenu.classList.remove("open");
     render();
   });
   ui.draftOrderNavButton.addEventListener("click", () => {
     state.currentSubview = "order";
+    state.isEditingTeamName = false;
+    ui.topBarMenu.classList.remove("open");
     render();
+  });
+  ui.editTeamNameButton.addEventListener("click", () => {
+    const r = route();
+    if (r.name !== "league") return;
+    state.isEditingTeamName = true;
+    render();
+    ui.yourTeamNameInput.focus();
+  });
+  ui.saveTeamNameButton.addEventListener("click", async () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx) return;
+    const mine = myTeam(ctx);
+    if (!mine) return;
+    try {
+      await renameTeam(ctx, mine.id, ui.yourTeamNameInput.value);
+      state.isEditingTeamName = false;
+      msg("league", "Team name updated.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
   });
   ui.draftFilterSelect.addEventListener("change", () => {
     state.draftFilter = ui.draftFilterSelect.value === "season" ? "season" : "alpha";

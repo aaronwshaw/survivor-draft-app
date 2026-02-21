@@ -378,6 +378,12 @@ select {
   margin-bottom: 0.5rem;
 }
 
+.team-name-text {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
 .roster-list {
   list-style: none;
   padding: 0;
@@ -635,6 +641,18 @@ button:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 0.75rem;
+}
+
+.your-team-edit {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.your-team-name {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.2;
 }
 
 .team-photo {
