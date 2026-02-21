@@ -121,19 +121,23 @@ function id(prefix) { return `${prefix}_${Math.random().toString(36).slice(2, 10
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
+const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [] };
 
-async function hashPassword(rawPassword) {
-  const value = String(rawPassword || "");
-  if (!value) throw new Error("Password is required.");
-  if (!globalThis.crypto?.subtle) throw new Error("Secure password hashing is unavailable in this browser.");
-  const bytes = new TextEncoder().encode(value);
-  const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+async function apiJson(url, options) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(String(json?.error || `Request failed (${response.status}).`));
+  }
+  return json;
 }
 
 function loadDb() {
-  try { return JSON.parse(localStorage.getItem(DB_KEY)) || { users: [], leagues: [], teams: [], memberships: [], draftStates: [] }; }
-  catch { return { users: [], leagues: [], teams: [], memberships: [], draftStates: [] }; }
+  try { return JSON.parse(localStorage.getItem(DB_KEY)) || EMPTY_DB; }
+  catch { return EMPTY_DB; }
 }
 function saveDb() { localStorage.setItem(DB_KEY, JSON.stringify(state.db)); }
 function loadSession() {
@@ -264,6 +268,24 @@ async function loadPlayers() {
   }
 }
 
+async function syncDb() {
+  const userId = state.session?.currentUserId;
+  if (!userId) {
+    state.db = EMPTY_DB;
+    saveDb();
+    return;
+  }
+  const result = await apiJson(`/api/legacy/sync?userId=${encodeURIComponent(userId)}`, { method: "GET" });
+  state.db = {
+    users: result.users || [],
+    leagues: result.leagues || [],
+    teams: result.teams || [],
+    memberships: result.memberships || [],
+    draftStates: result.draftStates || [],
+  };
+  saveDb();
+}
+
 function normalizeSeasons(rawSeasons) {
   if (Array.isArray(rawSeasons)) return rawSeasons;
   if (typeof rawSeasons === "string") {
@@ -281,82 +303,57 @@ function normalizeSeasons(rawSeasons) {
   return [];
 }
 
-function inviteCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let v = "";
-  for (let i = 0; i < 6; i += 1) v += chars[Math.floor(Math.random() * chars.length)];
-  while (state.db.leagues.some((l) => l.inviteCode === v)) {
-    v = "";
-    for (let i = 0; i < 6; i += 1) v += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return v;
-}
-
 async function signUp(rawUsername, rawPassword, displayName) {
   const username = email(rawUsername);
   if (!username) throw new Error("Username is required.");
   const name = String(displayName || "").trim();
   if (!name) throw new Error("Display name is required for account creation.");
-  if (state.db.users.some((u) => u.username === username || u.email === username)) {
-    throw new Error("That username already exists. Please log in.");
-  }
-  const passwordHash = await hashPassword(rawPassword);
-  const u = { id: id("usr"), username, email: username, displayName: name, passwordHash };
-  state.db.users.push(u);
-  state.session.currentUserId = u.id;
-  saveDb();
+  const result = await apiJson("/api/legacy/auth/signup", {
+    method: "POST",
+    body: JSON.stringify({ username, password: String(rawPassword || ""), displayName: name }),
+  });
+  state.session.currentUserId = result.user.id;
   saveSession();
+  await syncDb();
 }
 
 async function signIn(rawUsername, rawPassword) {
   const username = email(rawUsername);
   if (!username) throw new Error("Username is required.");
-  const u = state.db.users.find((x) => x.username === username || x.email === username);
-  if (!u) throw new Error("No account found for that username. Use Create Account first.");
-  if (!u.passwordHash) throw new Error("This account does not have a password. Create a new account.");
-  const passwordHash = await hashPassword(rawPassword);
-  if (u.passwordHash !== passwordHash) throw new Error("Incorrect username or password.");
-  state.session.currentUserId = u.id;
+  const result = await apiJson("/api/legacy/auth/signin", {
+    method: "POST",
+    body: JSON.stringify({ username, password: String(rawPassword || "") }),
+  });
+  state.session.currentUserId = result.user.id;
   saveSession();
+  await syncDb();
 }
 
 function signOut() {
   state.session.currentUserId = null;
   saveSession();
+  state.db = EMPTY_DB;
+  saveDb();
 }
 
-function createLeague(name, ownerUserId) {
+async function createLeague(name, ownerUserId) {
   const leagueName = String(name || "").trim();
   if (!leagueName) throw new Error("League name is required.");
-  const league = { id: id("l"), name: leagueName, ownerUserId, inviteCode: inviteCode(), createdAt: nowIso(), updatedAt: nowIso() };
-  state.db.leagues.push(league);
-  let adminTeamId = null;
-  for (let i = 1; i <= 8; i += 1) {
-    const teamId = id("t");
-    const ownerId = i === 1 ? ownerUserId : null;
-    if (i === 1) adminTeamId = teamId;
-    state.db.teams.push({ id: teamId, leagueId: league.id, slotNumber: i, name: `Team ${i}`, ownerUserId: ownerId });
-  }
-  state.db.memberships.push({ id: id("m"), leagueId: league.id, userId: ownerUserId, role: "admin", teamId: adminTeamId, createdAt: nowIso() });
-  state.db.draftStates.push({ leagueId: league.id, assignmentByPlayerId: {}, eliminationByPlayerId: {}, updatedAt: nowIso() });
-  saveDb();
-  return league;
+  const result = await apiJson("/api/legacy/leagues/create", {
+    method: "POST",
+    body: JSON.stringify({ userId: ownerUserId, leagueName }),
+  });
+  await syncDb();
+  return result.league;
 }
 
-function joinLeague(rawCode, userId) {
-  const invite = code(rawCode);
-  const league = state.db.leagues.find((l) => code(l.inviteCode) === invite);
-  if (!invite) throw new Error("Enter an invite code.");
-  if (!league) throw new Error("Invite code not found. Check for typos and paste only the code.");
-  if (membership(userId, league.id)) throw new Error("You're already in this league.");
-  const team = teamsByLeague(league.id).find((t) => t.ownerUserId === null);
-  if (!team) throw new Error("This league is full (8/8 teams taken).");
-  const fresh = state.db.teams.find((t) => t.id === team.id);
-  if (!fresh || fresh.ownerUserId !== null) throw new Error("Team claim conflict. Try again.");
-  fresh.ownerUserId = userId;
-  state.db.memberships.push({ id: id("m"), leagueId: league.id, userId, role: "member", teamId: fresh.id, createdAt: nowIso() });
-  saveDb();
-  return { league, slotNumber: fresh.slotNumber };
+async function joinLeague(rawCode, userId) {
+  const result = await apiJson("/api/legacy/leagues/join", {
+    method: "POST",
+    body: JSON.stringify({ userId, inviteCode: String(rawCode || "") }),
+  });
+  await syncDb();
+  return result.result;
 }
 
 function adminAssignUserToTeam(ctx, userEmail, teamId) {
@@ -1187,12 +1184,12 @@ function wire() {
   });
   ui.logoutButton.addEventListener("click", () => { signOut(); msg("", ""); go("#/login"); });
 
-  ui.createLeagueForm.addEventListener("submit", (e) => {
+  ui.createLeagueForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const user = currentUser();
     if (!user) { go("#/login"); return; }
     try {
-      const l = createLeague(ui.createLeagueName.value, user.id);
+      const l = await createLeague(ui.createLeagueName.value, user.id);
       ui.createLeagueForm.reset();
       msg("leagues", `League created: ${l.name}. Invite code: ${l.inviteCode}`);
       render();
@@ -1202,15 +1199,15 @@ function wire() {
     }
   });
 
-  ui.joinLeagueForm.addEventListener("submit", (e) => {
+  ui.joinLeagueForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const user = currentUser();
     if (!user) { go("#/login"); return; }
     try {
       const normalizedInput = code(ui.joinLeagueCode.value);
-      const result = joinLeague(normalizedInput, user.id);
+      const result = await joinLeague(normalizedInput, user.id);
       ui.joinLeagueForm.reset();
-      msg("leagues", `Joined ${result.league.name}. You are Team ${result.slotNumber}.`);
+      msg("leagues", `Joined ${result.leagueName}. You are Team ${result.slotNumber}.`);
       render();
     } catch (err) {
       msg("leagues", err.message);
@@ -1373,6 +1370,9 @@ async function init() {
   state.players = await loadPlayers();
   state.db = loadDb();
   state.session = loadSession();
+  await syncDb().catch(() => {
+    state.db = loadDb();
+  });
   wire();
   setAuthMode("login");
   render();
