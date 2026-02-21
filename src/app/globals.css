@@ -218,6 +218,9 @@ select {
   border: 1px solid #2f8b3a;
   background: #dcf6e0;
   color: #0f5420;
+  position: sticky;
+  top: 76px;
+  z-index: 40;
 }
 
 .turn-banner.clickable {
