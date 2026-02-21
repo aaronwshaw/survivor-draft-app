@@ -116,7 +116,10 @@ const ui = {
   saveTribeButton: document.getElementById("saveTribeButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
   detailsCloseTop: document.getElementById("detailsCloseTop"),
-  detailsCloseBottom: document.getElementById("detailsCloseBottom")
+  detailsCloseBottom: document.getElementById("detailsCloseBottom"),
+  topMenuToggle: document.getElementById("topMenuToggle"),
+  topBarMenu: document.getElementById("topBarMenu"),
+  globalLeagueNav: document.getElementById("globalLeagueNav")
 };
 
 function nowIso() { return new Date().toISOString(); }
@@ -601,6 +604,10 @@ function toggleView(name) {
   ui.loginView.classList.toggle("view-hidden", name !== "login");
   ui.leaguesView.classList.toggle("view-hidden", name !== "leagues");
   ui.leagueView.classList.toggle("view-hidden", name !== "league");
+  ui.globalLeagueNav.classList.toggle("view-hidden", name !== "league");
+  if (name !== "league") {
+    ui.topBarMenu.classList.remove("open");
+  }
 }
 
 function renderAuth() {
@@ -1221,6 +1228,15 @@ function render() {
 
 function wire() {
   window.addEventListener("hashchange", () => { msg("", ""); render(); });
+  ui.topMenuToggle.addEventListener("click", () => {
+    ui.topBarMenu.classList.toggle("open");
+  });
+  ui.topBarMenu.addEventListener("click", (e) => {
+    if (!(e.target instanceof HTMLElement)) return;
+    if (e.target.tagName === "BUTTON" && window.innerWidth <= 980) {
+      ui.topBarMenu.classList.remove("open");
+    }
+  });
   ui.authForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     try {

@@ -5,11 +5,42 @@ export default function Home() {
     <>
       <header className="app-header main-header">
         <h1>Survivor Draft</h1>
-        <div className="header-actions auth-actions">
-          <span id="currentUserLabel" className="muted" />
-          <button id="logoutButton" className="secondary" type="button">
-            Logout
-          </button>
+        <button id="topMenuToggle" className="secondary top-menu-toggle" type="button" aria-label="Open menu">
+          <span className="hamburger-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
+        <div id="topBarMenu" className="top-bar-menu">
+          <div id="globalLeagueNav" className="header-actions view-hidden">
+            <button id="backToLeaguesButton" className="secondary" type="button">
+              Back to Leagues
+            </button>
+            <button id="teamAssignmentsButton" className="secondary view-hidden" type="button">
+              Team Assignments
+            </button>
+            <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
+              Draft Order
+            </button>
+            <div className="view-toggle">
+              <button id="draftViewButton" className="secondary active-view" type="button">
+                Draft View
+              </button>
+              <button id="teamsViewButton" className="secondary" type="button">
+                Teams Photo View
+              </button>
+            </div>
+            <button id="resetButton" className="danger-button" type="button">
+              Reset League
+            </button>
+          </div>
+          <div className="account-stack">
+            <span id="currentUserLabel" className="muted" />
+            <button id="logoutButton" className="secondary" type="button">
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
@@ -97,34 +128,12 @@ export default function Home() {
             <div>
               <h2 id="leagueTitle" />
               <p id="leagueMeta" className="muted" />
-            </div>
-            <div className="header-actions">
-              <div className="invite-top">
+              <div className="invite-row">
                 <p id="leagueInviteCode" className="muted" />
                 <button id="copyInviteCodeButton" type="button" className="secondary">
                   Copy Invite Code
                 </button>
               </div>
-              <button id="backToLeaguesButton" className="secondary" type="button">
-                Back to Leagues
-              </button>
-              <button id="teamAssignmentsButton" className="secondary view-hidden" type="button">
-                Team Assignments
-              </button>
-              <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
-                Draft Order
-              </button>
-              <div className="view-toggle">
-                <button id="draftViewButton" className="secondary active-view" type="button">
-                  Draft View
-                </button>
-                <button id="teamsViewButton" className="secondary" type="button">
-                  Teams Photo View
-                </button>
-              </div>
-              <button id="resetButton" className="danger-button" type="button">
-                Reset League
-              </button>
             </div>
           </div>
 
