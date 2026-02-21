@@ -39,7 +39,10 @@ const state = {
   draftFilter: "alpha",
   tribeFilter: "all",
   assignTargetPlayerId: null,
-  detailsTargetPlayerId: null
+  detailsTargetPlayerId: null,
+  liveSyncTimer: null,
+  liveSyncInFlight: false,
+  liveSyncIntervalMs: 0
 };
 
 const ui = {
@@ -144,6 +147,51 @@ function loadSession() {
   catch { return { currentUserId: null }; }
 }
 function saveSession() { localStorage.setItem(SESSION_KEY, JSON.stringify(state.session)); }
+
+function clearLiveSync() {
+  if (state.liveSyncTimer) {
+    clearInterval(state.liveSyncTimer);
+    state.liveSyncTimer = null;
+  }
+  state.liveSyncIntervalMs = 0;
+}
+
+function desiredLiveSyncInterval() {
+  const user = currentUser();
+  if (!user) return 0;
+  const r = route();
+  if (r.name !== "league") return 0;
+  const ctx = ctxForLeague(r.leagueId);
+  if (!ctx) return 0;
+  const draft = ensureDraftConfig(ctx);
+  return draft.isDraftActive ? 2000 : 5000;
+}
+
+function ensureLiveSync() {
+  const interval = desiredLiveSyncInterval();
+  if (interval === 0) {
+    clearLiveSync();
+    return;
+  }
+  if (state.liveSyncTimer && state.liveSyncIntervalMs === interval) return;
+  clearLiveSync();
+  state.liveSyncIntervalMs = interval;
+  state.liveSyncTimer = setInterval(async () => {
+    if (state.liveSyncInFlight) return;
+    const r = route();
+    if (r.name !== "league") return;
+    if (!currentUser()) return;
+    state.liveSyncInFlight = true;
+    try {
+      await syncDb();
+      render();
+    } catch {
+      // keep polling; transient network issues should self-heal
+    } finally {
+      state.liveSyncInFlight = false;
+    }
+  }, interval);
+}
 
 function msg(view, text) {
   ui.loginMessage.textContent = view === "login" ? text : "";
@@ -326,6 +374,7 @@ function signOut() {
   saveSession();
   state.db = EMPTY_DB;
   saveDb();
+  clearLiveSync();
 }
 
 async function createLeague(name, ownerUserId) {
@@ -1161,11 +1210,12 @@ function render() {
   renderAuth();
   const r = route();
   const user = currentUser();
-  if (!user && r.name !== "login") { go("#/login"); return; }
-  if (user && r.name === "login") { go("#/leagues"); return; }
-  if (r.name === "login") { toggleView("login"); return; }
-  if (r.name === "leagues") { renderLeagues(); return; }
-  if (r.name === "league") { renderLeague(r.leagueId); return; }
+  if (!user && r.name !== "login") { clearLiveSync(); go("#/login"); return; }
+  if (user && r.name === "login") { clearLiveSync(); go("#/leagues"); return; }
+  if (r.name === "login") { clearLiveSync(); toggleView("login"); return; }
+  if (r.name === "leagues") { clearLiveSync(); renderLeagues(); return; }
+  if (r.name === "league") { renderLeague(r.leagueId); ensureLiveSync(); return; }
+  clearLiveSync();
   toggleView("login");
 }
 
