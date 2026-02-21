@@ -36,6 +36,8 @@ export async function GET(request: Request) {
         leagueId: true,
         assignmentByPlayerId: true,
         eliminationByPlayerId: true,
+        tribes: true,
+        tribeByPlayerId: true,
         updatedAt: true,
       },
     }),

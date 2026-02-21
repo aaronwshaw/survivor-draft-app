@@ -117,7 +117,6 @@ const ui = {
 };
 
 function nowIso() { return new Date().toISOString(); }
-function id(prefix) { return `${prefix}_${Math.random().toString(36).slice(2, 10)}`; }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
@@ -428,14 +427,54 @@ function renameTeam(ctx, teamId, name) {
   saveDb();
 }
 
-function assignPlayer(ctx, playerId, teamIdOrNull) {
+async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
+  const result = await apiJson("/api/legacy/draft/assign", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      playerId,
+      teamId: teamIdOrNull,
+    }),
+  });
+  return result.assignmentByPlayerId || {};
+}
+
+async function persistTribeAssignment(ctx, playerId, tribeId, newTribeName, tribeColor) {
+  return apiJson("/api/legacy/draft/tribe", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      playerId,
+      tribeId,
+      newTribeName,
+      tribeColor,
+    }),
+  });
+}
+
+async function persistElimination(ctx, playerId, action) {
+  const result = await apiJson("/api/legacy/draft/elimination", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      playerId,
+      action,
+    }),
+  });
+  return result.eliminationByPlayerId || {};
+}
+
+async function assignPlayer(ctx, playerId, teamIdOrNull) {
   const draft = ensureDraftConfig(ctx);
   const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
   const currentTeam = currentTeamId ? state.db.teams.find((t) => t.id === currentTeamId) : null;
 
   if (teamIdOrNull === null) {
     if (!currentTeam || !canUnassignPlayer(ctx.user, ctx.membership, currentTeam)) throw new Error("You can only edit your own team.");
-    delete draft.assignmentByPlayerId[playerId];
+    draft.assignmentByPlayerId = await persistPlayerAssignment(ctx, playerId, null);
     draft.updatedAt = nowIso();
     saveDb();
     return;
@@ -448,7 +487,7 @@ function assignPlayer(ctx, playerId, teamIdOrNull) {
     throw new Error("You can only edit your own team.");
   }
   const wasUnassigned = !currentTeamId;
-  draft.assignmentByPlayerId[playerId] = target.id;
+  draft.assignmentByPlayerId = await persistPlayerAssignment(ctx, playerId, target.id);
   draft.updatedAt = nowIso();
   saveDb();
   if (draft.isDraftActive && wasUnassigned) {
@@ -456,7 +495,7 @@ function assignPlayer(ctx, playerId, teamIdOrNull) {
   }
 }
 
-function claimPlayer(ctx, playerId) {
+async function claimPlayer(ctx, playerId) {
   if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
   const draft = ensureDraftConfig(ctx);
   if (draft.isDraftActive && !myTurn(ctx, draft)) {
@@ -468,7 +507,7 @@ function claimPlayer(ctx, playerId) {
   if (currentTeamId && currentTeamId !== mine.id) {
     throw new Error("This player is already claimed by another team.");
   }
-  assignPlayer(ctx, playerId, mine.id);
+  await assignPlayer(ctx, playerId, mine.id);
 }
 
 function resetLeague(ctx) {
@@ -488,25 +527,16 @@ function canEliminate(ctx, playerId) {
   return !!(team && team.ownerUserId === ctx.user.id);
 }
 
-function markEliminated(ctx, playerId) {
+async function markEliminated(ctx, playerId) {
   if (!canEliminate(ctx, playerId)) throw new Error("You can only edit your own team.");
-  if (ctx.draft.eliminationByPlayerId[playerId]) return;
-  const nums = Object.values(ctx.draft.eliminationByPlayerId).map((v) => Number(v) || 0);
-  const next = nums.length === 0 ? 1 : Math.max(...nums) + 1;
-  ctx.draft.eliminationByPlayerId[playerId] = next;
+  ctx.draft.eliminationByPlayerId = await persistElimination(ctx, playerId, "mark");
   ctx.draft.updatedAt = nowIso();
   saveDb();
 }
 
-function undoEliminated(ctx, playerId) {
+async function undoEliminated(ctx, playerId) {
   if (ctx.membership.role !== "admin") throw new Error("Only admins can undo elimination.");
-  const current = Number(ctx.draft.eliminationByPlayerId[playerId]);
-  if (!current) return;
-  delete ctx.draft.eliminationByPlayerId[playerId];
-  Object.keys(ctx.draft.eliminationByPlayerId).forEach((pid) => {
-    const n = Number(ctx.draft.eliminationByPlayerId[pid]) || 0;
-    if (n > current) ctx.draft.eliminationByPlayerId[pid] = n - 1;
-  });
+  ctx.draft.eliminationByPlayerId = await persistElimination(ctx, playerId, "undo");
   ctx.draft.updatedAt = nowIso();
   saveDb();
 }
@@ -715,8 +745,8 @@ function teamCard(ctx, team) {
       b.type = "button";
       b.className = "secondary";
       b.textContent = ctx.membership.role === "admin" ? "Unassign" : "Unclaim";
-      b.addEventListener("click", () => {
-        try { assignPlayer(ctx, p.id, null); render(); }
+      b.addEventListener("click", async () => {
+        try { await assignPlayer(ctx, p.id, null); render(); }
         catch (err) { msg("league", err.message); render(); }
       });
       li.appendChild(b);
@@ -762,8 +792,8 @@ function playerCard(ctx, p) {
     a.textContent = "Claim";
     const draft = ensureDraftConfig(ctx);
     a.disabled = !myTeam(ctx) || (draft.isDraftActive && !myTurn(ctx, draft));
-    a.addEventListener("click", () => {
-      try { claimPlayer(ctx, p.id); render(); }
+    a.addEventListener("click", async () => {
+      try { await claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
     });
   }
@@ -1299,27 +1329,27 @@ function wire() {
     catch (err) { msg("league", err.message); render(); }
   });
 
-  ui.assignConfirm.addEventListener("click", () => {
+  ui.assignConfirm.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league" || !state.assignTargetPlayerId) { closeAssign(); return; }
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx) { closeAssign(); return; }
-    try { assignPlayer(ctx, state.assignTargetPlayerId, ui.assignSelect.value || null); closeAssign(); msg("", ""); render(); }
+    try { await assignPlayer(ctx, state.assignTargetPlayerId, ui.assignSelect.value || null); closeAssign(); msg("", ""); render(); }
     catch (err) { closeAssign(); msg("league", err.message); render(); }
   });
   ui.assignCancel.addEventListener("click", closeAssign);
   ui.assignModal.addEventListener("click", (e) => { if (e.target === ui.assignModal) closeAssign(); });
 
-  ui.detailsEliminateButton.addEventListener("click", () => {
+  ui.detailsEliminateButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx) return;
     try {
       if (ctx.draft.eliminationByPlayerId[state.detailsTargetPlayerId]) {
-        undoEliminated(ctx, state.detailsTargetPlayerId);
+        await undoEliminated(ctx, state.detailsTargetPlayerId);
       } else {
-        markEliminated(ctx, state.detailsTargetPlayerId);
+        await markEliminated(ctx, state.detailsTargetPlayerId);
       }
       msg("", "");
       render();
@@ -1333,36 +1363,34 @@ function wire() {
   ui.tribeAssignToggle.addEventListener("click", () => {
     ui.tribeAssignPanel.classList.toggle("view-hidden");
   });
-  ui.saveTribeButton.addEventListener("click", () => {
+  ui.saveTribeButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx || ctx.membership.role !== "admin") return;
-    const draft = ensureDraftConfig(ctx);
-
-    let selectedTribeId = ui.tribeSelect.value || "";
+    const selectedTribeId = ui.tribeSelect.value || "";
     const newName = String(ui.newTribeName.value || "").trim();
-    if (newName) {
-      const exists = draft.tribes.find((t) => normalizeName(t.name) === normalizeName(newName));
-      if (exists) {
-        selectedTribeId = exists.id;
-      } else {
-        const tribe = { id: id("tribe"), name: newName, color: ui.tribeColorSelect.value || "#e53935" };
-        draft.tribes.push(tribe);
-        selectedTribeId = tribe.id;
-      }
+    try {
+      const result = await persistTribeAssignment(
+        ctx,
+        state.detailsTargetPlayerId,
+        selectedTribeId,
+        newName,
+        ui.tribeColorSelect.value || "#e53935",
+      );
+      const draft = ensureDraftConfig(ctx);
+      draft.tribes = Array.isArray(result.tribes) ? result.tribes : [];
+      draft.tribeByPlayerId = result.tribeByPlayerId || {};
+      draft.updatedAt = nowIso();
+      saveDb();
+      ui.tribeAssignPanel.classList.add("view-hidden");
+      msg("league", "Tribe assignment saved.");
+      render();
+      openDetails(r.leagueId, state.detailsTargetPlayerId);
+    } catch (err) {
+      msg("league", err.message);
+      render();
     }
-    if (selectedTribeId) {
-      draft.tribeByPlayerId[state.detailsTargetPlayerId] = selectedTribeId;
-    } else {
-      delete draft.tribeByPlayerId[state.detailsTargetPlayerId];
-    }
-    draft.updatedAt = nowIso();
-    saveDb();
-    ui.tribeAssignPanel.classList.add("view-hidden");
-    msg("league", "Tribe assignment saved.");
-    render();
-    openDetails(r.leagueId, state.detailsTargetPlayerId);
   });
 }
 

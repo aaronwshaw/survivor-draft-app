@@ -79,6 +79,8 @@ model DraftState {
   leagueId              String   @unique
   assignmentByPlayerId  Json     @default("{}")
   eliminationByPlayerId Json     @default("{}")
+  tribes                Json     @default("[]")
+  tribeByPlayerId       Json     @default("{}")
   updatedAt             DateTime @updatedAt
 
   league                League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
