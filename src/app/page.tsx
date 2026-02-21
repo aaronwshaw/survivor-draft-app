@@ -97,14 +97,14 @@ export default function Home() {
             <div>
               <h2 id="leagueTitle" />
               <p id="leagueMeta" className="muted" />
-              <div className="invite-row">
+            </div>
+            <div className="header-actions">
+              <div className="invite-top">
                 <p id="leagueInviteCode" className="muted" />
                 <button id="copyInviteCodeButton" type="button" className="secondary">
                   Copy Invite Code
                 </button>
               </div>
-            </div>
-            <div className="header-actions">
               <button id="backToLeaguesButton" className="secondary" type="button">
                 Back to Leagues
               </button>
