@@ -264,7 +264,10 @@ async function syncDb() {
     saveDb();
     return;
   }
-  const result = await apiJson(`/api/legacy/sync?userId=${encodeURIComponent(userId)}`, { method: "GET" });
+  const result = await apiJson(`/api/legacy/sync?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, {
+    method: "GET",
+    cache: "no-store",
+  });
   state.db = {
     users: result.users || [],
     leagues: result.leagues || [],
@@ -509,10 +512,8 @@ async function claimPlayer(ctx, playerId) {
 
 async function resetLeague(ctx) {
   if (!canResetLeague(ctx.user, ctx.membership, ctx.league)) throw new Error("Only admins can reset this league.");
-  const draft = draftState(ctx.league.id);
-  const result = await persistDraftConfig(ctx, "reset");
-  applyDraftState(draft, result);
-  saveDb();
+  await persistDraftConfig(ctx, "reset");
+  await syncDb();
 }
 
 function canEliminate(ctx, playerId) {
@@ -1030,31 +1031,23 @@ function nextDraftPositions(ctx, draft, count) {
 }
 
 async function moveDraftOrder(ctx, teamId, direction) {
-  const draft = ensureDraftConfig(ctx);
-  const result = await persistDraftConfig(ctx, "move", { teamId, direction });
-  applyDraftState(draft, result);
-  saveDb();
+  await persistDraftConfig(ctx, "move", { teamId, direction });
+  await syncDb();
 }
 
 async function randomizeDraftOrder(ctx) {
-  const draft = ensureDraftConfig(ctx);
-  const result = await persistDraftConfig(ctx, "randomize");
-  applyDraftState(draft, result);
-  saveDb();
+  await persistDraftConfig(ctx, "randomize");
+  await syncDb();
 }
 
 async function startDraft(ctx) {
-  const draft = ensureDraftConfig(ctx);
-  const result = await persistDraftConfig(ctx, "start");
-  applyDraftState(draft, result);
-  saveDb();
+  await persistDraftConfig(ctx, "start");
+  await syncDb();
 }
 
 async function stopDraft(ctx) {
-  const draft = ensureDraftConfig(ctx);
-  const result = await persistDraftConfig(ctx, "stop");
-  applyDraftState(draft, result);
-  saveDb();
+  await persistDraftConfig(ctx, "stop");
+  await syncDb();
 }
 
 function renderDraftOrderCard(ctx, draft) {
