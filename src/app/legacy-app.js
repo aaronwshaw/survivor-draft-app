@@ -206,35 +206,17 @@ function currentTurnTeamId(draft) {
   return draft.draftOrderTeamIds[idx] || null;
 }
 
-function advanceDraftTurn(draft) {
-  const total = Array.isArray(draft.draftOrderTeamIds) ? draft.draftOrderTeamIds.length : 0;
-  if (total === 0) return;
-  const picksMade = Object.keys(draft.assignmentByPlayerId || {}).length;
-  if (picksMade >= state.players.length) {
-    draft.isDraftActive = false;
-    draft.updatedAt = nowIso();
-    saveDb();
-    return;
-  }
-
-  const idx = Number(draft.currentPickIndex) || 0;
-  if (draft.direction === 1) {
-    if (idx >= total - 1) {
-      draft.direction = -1;
-      draft.roundNumber = (Number(draft.roundNumber) || 1) + 1;
-    } else {
-      draft.currentPickIndex = idx + 1;
-    }
-  } else {
-    if (idx <= 0) {
-      draft.direction = 1;
-      draft.roundNumber = (Number(draft.roundNumber) || 1) + 1;
-    } else {
-      draft.currentPickIndex = idx - 1;
-    }
-  }
+function applyDraftState(draft, payload) {
+  if (payload.assignmentByPlayerId) draft.assignmentByPlayerId = payload.assignmentByPlayerId;
+  if (payload.eliminationByPlayerId) draft.eliminationByPlayerId = payload.eliminationByPlayerId;
+  if (Array.isArray(payload.draftOrderTeamIds)) draft.draftOrderTeamIds = payload.draftOrderTeamIds;
+  if (typeof payload.currentPickIndex === "number") draft.currentPickIndex = payload.currentPickIndex;
+  if (typeof payload.roundNumber === "number") draft.roundNumber = payload.roundNumber;
+  if (payload.direction === -1 || payload.direction === 1) draft.direction = payload.direction;
+  if (typeof payload.isDraftActive === "boolean") draft.isDraftActive = payload.isDraftActive;
+  if (Array.isArray(payload.tribes)) draft.tribes = payload.tribes;
+  if (payload.tribeByPlayerId && typeof payload.tribeByPlayerId === "object") draft.tribeByPlayerId = payload.tribeByPlayerId;
   draft.updatedAt = nowIso();
-  saveDb();
 }
 
 function teamForPick(ctx, draft) {
@@ -436,7 +418,7 @@ function renameTeam(ctx, teamId, name) {
 }
 
 async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
-  const result = await apiJson("/api/legacy/draft/assign", {
+  return apiJson("/api/legacy/draft/assign", {
     method: "POST",
     body: JSON.stringify({
       userId: ctx.user.id,
@@ -445,7 +427,6 @@ async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
       teamId: teamIdOrNull,
     }),
   });
-  return result.assignmentByPlayerId || {};
 }
 
 async function persistTribeAssignment(ctx, playerId, tribeId, newTribeName, tribeColor) {
@@ -475,6 +456,18 @@ async function persistElimination(ctx, playerId, action) {
   return result.eliminationByPlayerId || {};
 }
 
+async function persistDraftConfig(ctx, action, extra = {}) {
+  return apiJson("/api/legacy/draft/config", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      action,
+      ...extra,
+    }),
+  });
+}
+
 async function assignPlayer(ctx, playerId, teamIdOrNull) {
   const draft = ensureDraftConfig(ctx);
   const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
@@ -482,8 +475,8 @@ async function assignPlayer(ctx, playerId, teamIdOrNull) {
 
   if (teamIdOrNull === null) {
     if (!currentTeam || !canUnassignPlayer(ctx.user, ctx.membership, currentTeam)) throw new Error("You can only edit your own team.");
-    draft.assignmentByPlayerId = await persistPlayerAssignment(ctx, playerId, null);
-    draft.updatedAt = nowIso();
+    const result = await persistPlayerAssignment(ctx, playerId, null);
+    applyDraftState(draft, result);
     saveDb();
     return;
   }
@@ -494,13 +487,9 @@ async function assignPlayer(ctx, playerId, teamIdOrNull) {
   if (currentTeam && currentTeam.id !== target.id && !canUnassignPlayer(ctx.user, ctx.membership, currentTeam)) {
     throw new Error("You can only edit your own team.");
   }
-  const wasUnassigned = !currentTeamId;
-  draft.assignmentByPlayerId = await persistPlayerAssignment(ctx, playerId, target.id);
-  draft.updatedAt = nowIso();
+  const result = await persistPlayerAssignment(ctx, playerId, target.id);
+  applyDraftState(draft, result);
   saveDb();
-  if (draft.isDraftActive && wasUnassigned) {
-    advanceDraftTurn(draft);
-  }
 }
 
 async function claimPlayer(ctx, playerId) {
@@ -518,12 +507,11 @@ async function claimPlayer(ctx, playerId) {
   await assignPlayer(ctx, playerId, mine.id);
 }
 
-function resetLeague(ctx) {
+async function resetLeague(ctx) {
   if (!canResetLeague(ctx.user, ctx.membership, ctx.league)) throw new Error("Only admins can reset this league.");
   const draft = draftState(ctx.league.id);
-  draft.assignmentByPlayerId = {};
-  draft.eliminationByPlayerId = {};
-  draft.updatedAt = nowIso();
+  const result = await persistDraftConfig(ctx, "reset");
+  applyDraftState(draft, result);
   saveDb();
 }
 
@@ -1041,45 +1029,31 @@ function nextDraftPositions(ctx, draft, count) {
   return out;
 }
 
-function moveDraftOrder(ctx, teamId, direction) {
+async function moveDraftOrder(ctx, teamId, direction) {
   const draft = ensureDraftConfig(ctx);
-  const i = draft.draftOrderTeamIds.indexOf(teamId);
-  if (i < 0) return;
-  const j = i + direction;
-  if (j < 0 || j >= draft.draftOrderTeamIds.length) return;
-  [draft.draftOrderTeamIds[i], draft.draftOrderTeamIds[j]] = [draft.draftOrderTeamIds[j], draft.draftOrderTeamIds[i]];
-  draft.updatedAt = nowIso();
+  const result = await persistDraftConfig(ctx, "move", { teamId, direction });
+  applyDraftState(draft, result);
   saveDb();
 }
 
-function randomizeDraftOrder(ctx) {
+async function randomizeDraftOrder(ctx) {
   const draft = ensureDraftConfig(ctx);
-  const arr = [...draft.draftOrderTeamIds];
-  for (let i = arr.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  draft.draftOrderTeamIds = arr;
-  draft.updatedAt = nowIso();
+  const result = await persistDraftConfig(ctx, "randomize");
+  applyDraftState(draft, result);
   saveDb();
 }
 
-function startDraft(ctx) {
+async function startDraft(ctx) {
   const draft = ensureDraftConfig(ctx);
-  draft.assignmentByPlayerId = {};
-  draft.eliminationByPlayerId = {};
-  draft.currentPickIndex = 0;
-  draft.roundNumber = 1;
-  draft.direction = 1;
-  draft.isDraftActive = true;
-  draft.updatedAt = nowIso();
+  const result = await persistDraftConfig(ctx, "start");
+  applyDraftState(draft, result);
   saveDb();
 }
 
-function stopDraft(ctx) {
+async function stopDraft(ctx) {
   const draft = ensureDraftConfig(ctx);
-  draft.isDraftActive = false;
-  draft.updatedAt = nowIso();
+  const result = await persistDraftConfig(ctx, "stop");
+  applyDraftState(draft, result);
   saveDb();
 }
 
@@ -1106,13 +1080,19 @@ function renderDraftOrderCard(ctx, draft) {
     up.className = "secondary";
     up.textContent = "Up";
     up.disabled = !isAdmin || index === 0 || draft.isDraftActive;
-    up.addEventListener("click", () => { moveDraftOrder(ctx, teamId, -1); render(); });
+    up.addEventListener("click", async () => {
+      try { await moveDraftOrder(ctx, teamId, -1); render(); }
+      catch (err) { msg("league", err.message); render(); }
+    });
     const down = document.createElement("button");
     down.type = "button";
     down.className = "secondary";
     down.textContent = "Down";
     down.disabled = !isAdmin || index === draft.draftOrderTeamIds.length - 1 || draft.isDraftActive;
-    down.addEventListener("click", () => { moveDraftOrder(ctx, teamId, 1); render(); });
+    down.addEventListener("click", async () => {
+      try { await moveDraftOrder(ctx, teamId, 1); render(); }
+      catch (err) { msg("league", err.message); render(); }
+    });
     controls.appendChild(up);
     controls.appendChild(down);
     row.appendChild(controls);
@@ -1277,33 +1257,48 @@ function wire() {
     state.showTurnPreview = !state.showTurnPreview;
     render();
   });
-  ui.randomizeDraftOrderButton.addEventListener("click", () => {
+  ui.randomizeDraftOrderButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx || ctx.membership.role !== "admin") return;
-    randomizeDraftOrder(ctx);
-    msg("league", "Draft order randomized.");
-    render();
+    try {
+      await randomizeDraftOrder(ctx);
+      msg("league", "Draft order randomized.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
   });
-  ui.startDraftButton.addEventListener("click", () => {
+  ui.startDraftButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx || ctx.membership.role !== "admin") return;
     if (!confirm("Start draft and reset all assignments?")) return;
-    startDraft(ctx);
-    msg("league", "Draft started.");
-    render();
+    try {
+      await startDraft(ctx);
+      msg("league", "Draft started.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
   });
-  ui.stopDraftButton.addEventListener("click", () => {
+  ui.stopDraftButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx || ctx.membership.role !== "admin") return;
-    stopDraft(ctx);
-    msg("league", "Draft stopped. Order is locked as-is.");
-    render();
+    try {
+      await stopDraft(ctx);
+      msg("league", "Draft stopped. Order is locked as-is.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
   });
   ui.teamAssignmentsButton.addEventListener("click", () => {
     const r = route();
@@ -1328,13 +1323,13 @@ function wire() {
     if (r.name === "league") render();
   });
 
-  ui.resetButton.addEventListener("click", () => {
+  ui.resetButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx) return;
     if (!confirm("Reset this league draft?")) return;
-    try { resetLeague(ctx); msg("", ""); render(); }
+    try { await resetLeague(ctx); msg("", ""); render(); }
     catch (err) { msg("league", err.message); render(); }
   });
 

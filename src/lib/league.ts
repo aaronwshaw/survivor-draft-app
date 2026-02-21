@@ -29,6 +29,7 @@ export async function createLeagueWithDefaults(leagueName: string, ownerUserId: 
     });
 
     let adminTeamId = "";
+    const draftOrderTeamIds: string[] = [];
     for (let i = 1; i <= 8; i += 1) {
       const createdTeam = await tx.team.create({
         data: {
@@ -38,6 +39,7 @@ export async function createLeagueWithDefaults(leagueName: string, ownerUserId: 
           ownerUserId: i === 1 ? ownerUserId : null,
         },
       });
+      draftOrderTeamIds.push(createdTeam.id);
       if (i === 1) {
         adminTeamId = createdTeam.id;
       }
@@ -57,6 +59,11 @@ export async function createLeagueWithDefaults(leagueName: string, ownerUserId: 
         leagueId: league.id,
         assignmentByPlayerId: {},
         eliminationByPlayerId: {},
+        draftOrderTeamIds,
+        currentPickIndex: 0,
+        roundNumber: 1,
+        direction: 1,
+        isDraftActive: false,
       },
     });
 

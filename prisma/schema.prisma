@@ -79,6 +79,11 @@ model DraftState {
   leagueId              String   @unique
   assignmentByPlayerId  Json     @default("{}")
   eliminationByPlayerId Json     @default("{}")
+  draftOrderTeamIds     Json     @default("[]")
+  currentPickIndex      Int      @default(0)
+  roundNumber           Int      @default(1)
+  direction             Int      @default(1)
+  isDraftActive         Boolean  @default(false)
   tribes                Json     @default("[]")
   tribeByPlayerId       Json     @default("{}")
   updatedAt             DateTime @updatedAt

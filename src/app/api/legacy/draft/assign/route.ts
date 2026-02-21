@@ -17,6 +17,11 @@ function toAssignmentMap(value: unknown): Record<string, string> {
   return out;
 }
 
+function toTeamIdArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && !!item);
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as AssignBody | null;
   const userId = String(body?.userId || "");
@@ -41,17 +46,48 @@ export async function POST(request: Request) {
 
       let draft = await tx.draftState.findUnique({
         where: { leagueId },
-        select: { id: true, assignmentByPlayerId: true },
+        select: {
+          id: true,
+          assignmentByPlayerId: true,
+          draftOrderTeamIds: true,
+          currentPickIndex: true,
+          roundNumber: true,
+          direction: true,
+          isDraftActive: true,
+        },
       });
       if (!draft) {
+        const teamRows = await tx.team.findMany({
+          where: { leagueId },
+          select: { id: true },
+          orderBy: { slotNumber: "asc" },
+        });
         draft = await tx.draftState.create({
-          data: { leagueId, assignmentByPlayerId: {}, eliminationByPlayerId: {} },
-          select: { id: true, assignmentByPlayerId: true },
+          data: {
+            leagueId,
+            assignmentByPlayerId: {},
+            eliminationByPlayerId: {},
+            draftOrderTeamIds: teamRows.map((row) => row.id),
+            currentPickIndex: 0,
+            roundNumber: 1,
+            direction: 1,
+            isDraftActive: false,
+          },
+          select: {
+            id: true,
+            assignmentByPlayerId: true,
+            draftOrderTeamIds: true,
+            currentPickIndex: true,
+            roundNumber: true,
+            direction: true,
+            isDraftActive: true,
+          },
         });
       }
 
       const assignmentByPlayerId = toAssignmentMap(draft.assignmentByPlayerId);
       const currentTeamId = assignmentByPlayerId[playerId] || null;
+      const wasUnassigned = !currentTeamId;
 
       const [currentTeam, targetTeam] = await Promise.all([
         currentTeamId
@@ -87,15 +123,56 @@ export async function POST(request: Request) {
         assignmentByPlayerId[playerId] = targetTeam.id;
       }
 
-      await tx.draftState.update({
+      const playerCount = await tx.player.count();
+      const picksMade = Object.keys(assignmentByPlayerId).length;
+      let currentPickIndex = draft.currentPickIndex;
+      let roundNumber = draft.roundNumber;
+      let direction = draft.direction === -1 ? -1 : 1;
+      let isDraftActive = draft.isDraftActive;
+      const order = toTeamIdArray(draft.draftOrderTeamIds);
+
+      if (teamId && isDraftActive && wasUnassigned && order.length > 0) {
+        if (playerCount > 0 && picksMade >= playerCount) {
+          isDraftActive = false;
+        } else if (direction === 1) {
+          if (currentPickIndex >= order.length - 1) {
+            direction = -1;
+            roundNumber += 1;
+          } else {
+            currentPickIndex += 1;
+          }
+        } else if (currentPickIndex <= 0) {
+          direction = 1;
+          roundNumber += 1;
+        } else {
+          currentPickIndex -= 1;
+        }
+      }
+
+      const updated = await tx.draftState.update({
         where: { id: draft.id },
-        data: { assignmentByPlayerId },
+        data: {
+          assignmentByPlayerId,
+          currentPickIndex,
+          roundNumber,
+          direction,
+          isDraftActive,
+        },
+        select: {
+          assignmentByPlayerId: true,
+          draftOrderTeamIds: true,
+          currentPickIndex: true,
+          roundNumber: true,
+          direction: true,
+          isDraftActive: true,
+          updatedAt: true,
+        },
       });
 
-      return assignmentByPlayerId;
+      return updated;
     });
 
-    return NextResponse.json({ assignmentByPlayerId: result });
+    return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to update player assignment.";
     return NextResponse.json({ error: message }, { status: 400 });
