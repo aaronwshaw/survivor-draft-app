@@ -639,6 +639,7 @@ function toggleView(name) {
   ui.globalLeagueNav.classList.toggle("view-hidden", name !== "league");
   if (name !== "league") {
     ui.topBarMenu.classList.remove("open");
+    document.body.classList.remove("draft-desktop-lock");
   }
 }
 
@@ -674,6 +675,8 @@ function updateDraftSubview() {
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
   ui.yourTeamViewButton.classList.toggle("active-view", isYourTeam);
+  const shouldLockDesktop = isDraft && !isMobileLayout() && route().name === "league";
+  document.body.classList.toggle("draft-desktop-lock", shouldLockDesktop);
 }
 
 function ordinal(n) {
