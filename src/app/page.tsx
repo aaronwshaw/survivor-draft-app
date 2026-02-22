@@ -176,6 +176,7 @@ export default function Home() {
                     <option value="#43a047">Green</option>
                     <option value="#fbc02d">Yellow</option>
                     <option value="#8e24aa">Purple</option>
+                    <option value="#ec407a">Pink</option>
                     <option value="#fb8c00">Orange</option>
                     <option value="#00897b">Teal</option>
                     <option value="#6d4c41">Brown</option>
