@@ -867,6 +867,11 @@ button:hover {
   overflow-x: auto;
 }
 
+.team-assignments-message {
+  min-height: 1rem;
+  margin: 0.25rem 0 0.45rem;
+}
+
 .team-assignments-table {
   width: 100%;
   border-collapse: collapse;

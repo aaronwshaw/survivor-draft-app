@@ -43,7 +43,8 @@ const state = {
   isEditingTeamName: false,
   liveSyncTimer: null,
   liveSyncInFlight: false,
-  liveSyncIntervalMs: 0
+  liveSyncIntervalMs: 0,
+  teamAssignmentsMsgTimer: null
 };
 
 const ui = {
@@ -87,6 +88,7 @@ const ui = {
   stopDraftButton: document.getElementById("stopDraftButton"),
   teamAssignmentsView: document.getElementById("teamAssignmentsView"),
   teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
+  teamAssignmentsMessage: document.getElementById("teamAssignmentsMessage"),
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
   draftViewButton: document.getElementById("draftViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
@@ -223,6 +225,18 @@ function msg(view, text) {
   ui.loginMessage.textContent = view === "login" ? text : "";
   ui.leaguesMessage.textContent = view === "leagues" ? text : "";
   ui.leagueMessage.textContent = view === "league" ? text : "";
+}
+
+function showTeamAssignmentsMessage(text) {
+  if (!ui.teamAssignmentsMessage) return;
+  ui.teamAssignmentsMessage.textContent = text;
+  if (state.teamAssignmentsMsgTimer) {
+    clearTimeout(state.teamAssignmentsMsgTimer);
+  }
+  state.teamAssignmentsMsgTimer = setTimeout(() => {
+    ui.teamAssignmentsMessage.textContent = "";
+    state.teamAssignmentsMsgTimer = null;
+  }, 1800);
 }
 
 function styleTribeColorOptions() {
@@ -1174,6 +1188,7 @@ function renderLeagues() {
 
 function renderTeamAssignments(ctx) {
   ui.teamAssignmentsTableBody.innerHTML = "";
+  ui.teamAssignmentsMessage.textContent = "";
   const rows = state.db.memberships
     .filter((m) => m.leagueId === ctx.league.id)
     .map((m) => {
@@ -1206,10 +1221,10 @@ function renderTeamAssignments(ctx) {
     select.addEventListener("change", () => {
       try {
         adminAssignUserToTeam(ctx, row.user.email, select.value);
-        msg("league", `${row.user.displayName || row.user.email} reassigned.`);
+        showTeamAssignmentsMessage(`${row.user.displayName || row.user.email} reassigned.`);
         render();
       } catch (err) {
-        msg("league", err.message);
+        showTeamAssignmentsMessage(err.message);
         render();
       }
     });

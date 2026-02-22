@@ -160,6 +160,7 @@ export default function Home() {
             <section id="teamAssignmentsView" className="card" aria-labelledby="teamAssignmentsTitle">
               <h3 id="teamAssignmentsTitle">Team Assignments</h3>
               <p className="muted">Admins can reassign members between teams.</p>
+              <p id="teamAssignmentsMessage" className="message team-assignments-message" />
               <div className="team-assignments-table-wrap">
                 <table className="team-assignments-table">
                   <thead>
