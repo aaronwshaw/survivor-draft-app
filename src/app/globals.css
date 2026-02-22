@@ -495,6 +495,10 @@ select {
   border: 7px solid var(--tribe-color, var(--line));
 }
 
+.team-photo.tribe-border {
+  border: 7px solid var(--tribe-color, var(--line));
+}
+
 #tribeColorSelect {
   font-size: 1.15rem;
   font-weight: 700;
@@ -686,6 +690,51 @@ button:hover {
   gap: 0.25rem;
 }
 
+.team-list-player {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.team-list-player-name {
+  min-width: 0;
+}
+
+.team-list-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.team-list-badge {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.team-list-badge-tribe {
+  background: var(--tribe-color, #999);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.team-list-tribe-right {
+  margin-left: auto;
+}
+
+.team-list-badge-elim {
+  background: #b00020;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
 .team-detail-head {
   display: flex;
   align-items: center;
@@ -714,6 +763,19 @@ button:hover {
   margin: 0;
   font-size: 1.35rem;
   line-height: 1.2;
+}
+
+.details-controls-row {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.details-controls-row .modal-actions {
+  margin-top: 0;
 }
 
 .team-photo {

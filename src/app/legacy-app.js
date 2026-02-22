@@ -959,7 +959,29 @@ function teamListCard(ctx, team) {
   } else {
     names.forEach((player) => {
       const li = document.createElement("li");
-      li.textContent = player.name;
+      li.className = "team-list-player";
+      const eliminationNum = Number(ctx.draft.eliminationByPlayerId[player.id]) || 0;
+      if (eliminationNum > 0) {
+        const place = Math.max(1, state.players.length - eliminationNum + 1);
+        const elim = document.createElement("span");
+        elim.className = "team-list-badge team-list-badge-elim";
+        elim.textContent = String(place);
+        elim.title = `${ordinal(place)} place`;
+        li.appendChild(elim);
+      }
+      const nameSpan = document.createElement("span");
+      nameSpan.className = "team-list-player-name";
+      nameSpan.textContent = player.name;
+      li.appendChild(nameSpan);
+
+      const tribe = tribeForPlayer(ctx.draft, player.id);
+      if (tribe) {
+        const tribeDot = document.createElement("span");
+        tribeDot.className = "team-list-badge team-list-badge-tribe team-list-tribe-right";
+        tribeDot.style.setProperty("--tribe-color", tribe.color || "#999");
+        tribeDot.title = `Tribe: ${tribe.name}`;
+        li.appendChild(tribeDot);
+      }
       roster.appendChild(li);
     });
   }
