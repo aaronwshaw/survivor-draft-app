@@ -1441,8 +1441,11 @@ function renderLeague(leagueId) {
 
   const isAdmin = ctx.membership.role === "admin";
   const isOwner = !!ctx.user.isOwner;
+  const allAssigned = state.players.length > 0 && state.players.every((player) => !!draft.assignmentByPlayerId[player.id]);
   if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
   if (!isOwner && state.currentSubview === "survivor") state.currentSubview = "draft";
+  if (allAssigned && !isAdmin && state.currentSubview === "draft") state.currentSubview = "teams";
+  ui.draftViewButton.classList.toggle("view-hidden", allAssigned && !isAdmin);
   ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
   ui.survivorMgmtViewButton.classList.toggle("view-hidden", !isOwner);
   renderDraftOrderCard(ctx, draft);
@@ -1450,10 +1453,10 @@ function renderLeague(leagueId) {
   ui.teamAssignmentsView.classList.toggle("view-hidden", !isAdmin);
   if (isAdmin) renderTeamAssignments(ctx);
 
-  ui.teamsViewButton.textContent = isMobileLayout() ? "Teams View" : "Teams Photo View";
+  ui.teamsViewButton.textContent = "Teams";
   const teamsTitle = document.getElementById("teamsColumnsTitle");
   if (teamsTitle) {
-    teamsTitle.textContent = isMobileLayout() ? "Teams View" : "Teams Split View (8 Columns)";
+    teamsTitle.textContent = "Teams";
   }
   ui.teamColumnsContainer.className = isMobileLayout() ? "team-list-grid" : "team-columns-grid";
 

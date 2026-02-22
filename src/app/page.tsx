@@ -17,21 +17,21 @@ export default function Home() {
             <button id="backToLeaguesButton" className="secondary" type="button">
               Back to Leagues
             </button>
+            <button id="survivorMgmtViewButton" className="secondary view-hidden" type="button">
+              Survivor Management
+            </button>
             <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
               League Management
             </button>
             <button id="yourTeamViewButton" className="secondary" type="button">
               Your Team
             </button>
-            <button id="survivorMgmtViewButton" className="secondary view-hidden" type="button">
-              Survivor Management
-            </button>
             <div className="view-toggle">
               <button id="draftViewButton" className="secondary active-view" type="button">
-                Draft View
+                Draft
               </button>
               <button id="teamsViewButton" className="secondary" type="button">
-                Teams Photo View
+                Teams
               </button>
             </div>
             <button id="resetButton" className="danger-button" type="button">
@@ -315,9 +315,6 @@ export default function Home() {
               <button id="detailsEliminateButton" type="button" className="danger-button">
                 Eliminated
               </button>
-              <button id="detailsCloseBottom" type="button" className="secondary">
-                Close
-              </button>
             </div>
           </div>
           <p>
@@ -328,6 +325,11 @@ export default function Home() {
           </p>
           <h4>Seasons</h4>
           <ul id="detailsSeasons" />
+          <div className="modal-actions">
+            <button id="detailsCloseBottom" type="button" className="secondary">
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
