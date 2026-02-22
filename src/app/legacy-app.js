@@ -43,6 +43,7 @@ const state = {
   isEditingTeamName: false,
   isEditingGlobalTribeId: null,
   teamAssignmentEditingTeamId: null,
+  lastLayoutIsMobile: null,
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0,
@@ -1614,10 +1615,15 @@ function render() {
 }
 
 function wire() {
+  state.lastLayoutIsMobile = isMobileLayout();
   window.addEventListener("hashchange", () => { msg("", ""); render(); });
   window.addEventListener("resize", () => {
     const r = route();
-    if (r.name === "league") render();
+    if (r.name !== "league") return;
+    const nowMobile = isMobileLayout();
+    if (state.lastLayoutIsMobile === nowMobile) return;
+    state.lastLayoutIsMobile = nowMobile;
+    render();
   });
   ui.topMenuToggle.addEventListener("click", () => {
     ui.topBarMenu.classList.toggle("open");
