@@ -3,6 +3,14 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+type TribeRow = { id: string; name: string; color: string };
+type TribeLookup = {
+  findMany: (args: {
+    orderBy: { name: "asc" };
+    select: { id: true; name: true; color: true };
+  }) => Promise<TribeRow[]>;
+};
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = String(searchParams.get("userId") || "");
@@ -16,7 +24,7 @@ export async function GET(request: Request) {
   });
   const leagueIds = memberships.map((m) => m.leagueId);
 
-  const [users, leagues, teams, allMemberships, draftStates] = await Promise.all([
+  const [users, leagues, teams, allMemberships, draftStates, tribes] = await Promise.all([
     prisma.user.findMany({
       select: { id: true, email: true, displayName: true, isOwner: true },
     }),
@@ -48,6 +56,10 @@ export async function GET(request: Request) {
         updatedAt: true,
       },
     }),
+    (prisma as unknown as { tribe: TribeLookup }).tribe.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, color: true },
+    }),
   ]);
 
   return NextResponse.json({
@@ -56,5 +68,6 @@ export async function GET(request: Request) {
     teams,
     memberships: allMemberships,
     draftStates,
+    tribes,
   });
 }

@@ -41,6 +41,7 @@ const state = {
   detailsTargetPlayerId: null,
   teamsViewTeamId: null,
   isEditingTeamName: false,
+  isEditingGlobalTribeId: null,
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0,
@@ -93,10 +94,17 @@ const ui = {
   draftViewButton: document.getElementById("draftViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
   yourTeamViewButton: document.getElementById("yourTeamViewButton"),
+  survivorMgmtViewButton: document.getElementById("survivorMgmtViewButton"),
   resetButton: document.getElementById("resetButton"),
   draftLayout: document.getElementById("draftLayout"),
   teamsColumnsView: document.getElementById("teamsColumnsView"),
   yourTeamView: document.getElementById("yourTeamView"),
+  survivorManagementView: document.getElementById("survivorManagementView"),
+  tribeManagementList: document.getElementById("tribeManagementList"),
+  newGlobalTribeName: document.getElementById("newGlobalTribeName"),
+  newGlobalTribeColor: document.getElementById("newGlobalTribeColor"),
+  createGlobalTribeButton: document.getElementById("createGlobalTribeButton"),
+  survivorPlayersGrid: document.getElementById("survivorPlayersGrid"),
   yourTeamNameDisplay: document.getElementById("yourTeamNameDisplay"),
   yourTeamNameInput: document.getElementById("yourTeamNameInput"),
   yourTeamMeta: document.getElementById("yourTeamMeta"),
@@ -138,7 +146,7 @@ function nowIso() { return new Date().toISOString(); }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
-const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [] };
+const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [] };
 
 function isMobileLayout() {
   return typeof window !== "undefined" && window.innerWidth <= 768;
@@ -240,10 +248,12 @@ function showTeamAssignmentsMessage(text) {
 }
 
 function styleTribeColorOptions() {
-  if (!ui.tribeColorSelect) return;
-  Array.from(ui.tribeColorSelect.options).forEach((option) => {
-    option.style.color = option.value;
-    option.textContent = `[] ${option.textContent || ""}`.trim();
+  const selects = [ui.tribeColorSelect, ui.newGlobalTribeColor].filter(Boolean);
+  selects.forEach((selectEl) => {
+    Array.from(selectEl.options).forEach((option) => {
+      option.style.color = option.value;
+      option.textContent = option.textContent || "";
+    });
   });
 }
 
@@ -265,11 +275,10 @@ function membership(userId, leagueId) { return state.db.memberships.find((m) => 
 function draftState(leagueId) {
   let d = state.db.draftStates.find((x) => x.leagueId === leagueId);
   if (!d) {
-    d = { leagueId, assignmentByPlayerId: {}, eliminationByPlayerId: {}, updatedAt: nowIso() };
+    d = { leagueId, assignmentByPlayerId: {}, updatedAt: nowIso() };
     state.db.draftStates.push(d);
     saveDb();
   }
-  if (!d.eliminationByPlayerId) d.eliminationByPlayerId = {};
   return d;
 }
 
@@ -282,8 +291,6 @@ function ensureDraftConfig(ctx) {
   if (typeof d.roundNumber !== "number") d.roundNumber = 1;
   if (d.direction !== -1 && d.direction !== 1) d.direction = 1;
   if (typeof d.isDraftActive !== "boolean") d.isDraftActive = false;
-  if (!Array.isArray(d.tribes)) d.tribes = [];
-  if (!d.tribeByPlayerId || typeof d.tribeByPlayerId !== "object") d.tribeByPlayerId = {};
   return d;
 }
 
@@ -296,14 +303,11 @@ function currentTurnTeamId(draft) {
 
 function applyDraftState(draft, payload) {
   if (payload.assignmentByPlayerId) draft.assignmentByPlayerId = payload.assignmentByPlayerId;
-  if (payload.eliminationByPlayerId) draft.eliminationByPlayerId = payload.eliminationByPlayerId;
   if (Array.isArray(payload.draftOrderTeamIds)) draft.draftOrderTeamIds = payload.draftOrderTeamIds;
   if (typeof payload.currentPickIndex === "number") draft.currentPickIndex = payload.currentPickIndex;
   if (typeof payload.roundNumber === "number") draft.roundNumber = payload.roundNumber;
   if (payload.direction === -1 || payload.direction === 1) draft.direction = payload.direction;
   if (typeof payload.isDraftActive === "boolean") draft.isDraftActive = payload.isDraftActive;
-  if (Array.isArray(payload.tribes)) draft.tribes = payload.tribes;
-  if (payload.tribeByPlayerId && typeof payload.tribeByPlayerId === "object") draft.tribeByPlayerId = payload.tribeByPlayerId;
   draft.updatedAt = nowIso();
 }
 
@@ -362,7 +366,9 @@ async function syncDb() {
     teams: result.teams || [],
     memberships: result.memberships || [],
     draftStates: result.draftStates || [],
+    tribes: result.tribes || [],
   };
+  state.players = await loadPlayers();
   saveDb();
 }
 
@@ -529,31 +535,28 @@ async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
   });
 }
 
-async function persistTribeAssignment(ctx, playerId, tribeId, newTribeName, tribeColor) {
-  return apiJson("/api/legacy/draft/tribe", {
+async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated) {
+  return apiJson("/api/legacy/survivor/player", {
     method: "POST",
     body: JSON.stringify({
       userId: ctx.user.id,
-      leagueId: ctx.league.id,
       playerId,
       tribeId,
-      newTribeName,
-      tribeColor,
+      eliminated,
     }),
   });
 }
 
-async function persistElimination(ctx, playerId, action) {
-  const result = await apiJson("/api/legacy/draft/elimination", {
+async function persistSurvivorTribe(ctx, tribeId, name, color) {
+  return apiJson("/api/legacy/survivor/tribes", {
     method: "POST",
     body: JSON.stringify({
       userId: ctx.user.id,
-      leagueId: ctx.league.id,
-      playerId,
-      action,
+      tribeId,
+      name,
+      color,
     }),
   });
-  return result.eliminationByPlayerId || {};
 }
 
 async function persistDraftConfig(ctx, action, extra = {}) {
@@ -613,26 +616,22 @@ async function resetLeague(ctx) {
   await syncDb();
 }
 
-function canEliminate(ctx, playerId) {
-  if (ctx.membership.role === "admin") return true;
-  const teamId = ctx.draft.assignmentByPlayerId[playerId];
-  if (!teamId) return false;
-  const team = state.db.teams.find((t) => t.id === teamId);
-  return !!(team && team.ownerUserId === ctx.user.id);
+function tribeForId(tribeId) {
+  if (!tribeId) return null;
+  return (state.db.tribes || []).find((tribe) => tribe.id === tribeId) || null;
 }
 
-async function markEliminated(ctx, playerId) {
-  if (!canEliminate(ctx, playerId)) throw new Error("You can only edit your own team.");
-  ctx.draft.eliminationByPlayerId = await persistElimination(ctx, playerId, "mark");
-  ctx.draft.updatedAt = nowIso();
-  saveDb();
+function nextEliminationNumber() {
+  const nums = state.players
+    .map((player) => Number(player.eliminated) || 0)
+    .filter((n) => n > 0);
+  return nums.length === 0 ? 1 : Math.max(...nums) + 1;
 }
 
-async function undoEliminated(ctx, playerId) {
-  if (ctx.membership.role !== "admin") throw new Error("Only admins can undo elimination.");
-  ctx.draft.eliminationByPlayerId = await persistElimination(ctx, playerId, "undo");
-  ctx.draft.updatedAt = nowIso();
-  saveDb();
+async function updatePlayerSurvivorState(ctx, playerId, nextTribeId, nextEliminated) {
+  if (!ctx.user.isOwner) throw new Error("Only owners can manage survivor data.");
+  await persistSurvivorPlayer(ctx, playerId, nextTribeId || null, nextEliminated || null);
+  await syncDb();
 }
 
 function route() {
@@ -679,15 +678,18 @@ function updateDraftSubview() {
   const isTeams = state.currentSubview === "teams";
   const isOrder = state.currentSubview === "order";
   const isYourTeam = state.currentSubview === "yourteam";
+  const isSurvivor = state.currentSubview === "survivor";
   ui.draftLayout.classList.toggle("view-hidden", !isDraft);
   ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
   ui.leagueManagementView.classList.toggle("view-hidden", !isOrder);
   ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
+  ui.survivorManagementView.classList.toggle("view-hidden", !isSurvivor);
   ui.leagueInfoCard.classList.toggle("view-hidden", !isYourTeam);
   ui.draftViewButton.classList.toggle("active-view", isDraft);
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
   ui.yourTeamViewButton.classList.toggle("active-view", isYourTeam);
+  ui.survivorMgmtViewButton.classList.toggle("active-view", isSurvivor);
   const shouldLockDesktop = isDraft && !isMobileLayout() && route().name === "league";
   document.body.classList.toggle("draft-desktop-lock", shouldLockDesktop);
 }
@@ -703,8 +705,8 @@ function ordinal(n) {
   return `${abs}th`;
 }
 
-function eliminationBadge(draft, playerId) {
-  const n = draft.eliminationByPlayerId[playerId];
+function eliminationBadge(player) {
+  const n = Number(player?.eliminated) || 0;
   if (!n) return null;
   const place = Math.max(1, state.players.length - Number(n) + 1);
   const b = document.createElement("span");
@@ -750,34 +752,36 @@ function closeAssign() {
 }
 
 function updateEliminateButton(ctx, playerId) {
-  const n = ctx.draft.eliminationByPlayerId[playerId];
-  if (n) {
-    const place = Math.max(1, state.players.length - Number(n) + 1);
-    if (ctx.membership.role === "admin") {
-      ui.detailsEliminateButton.disabled = false;
-      ui.detailsEliminateButton.textContent = `Undo Elimination (${ordinal(place)} place)`;
-    } else {
-      ui.detailsEliminateButton.disabled = true;
-      ui.detailsEliminateButton.textContent = `Eliminated (${ordinal(place)} place)`;
-    }
+  const player = state.players.find((entry) => entry.id === playerId);
+  const n = Number(player?.eliminated) || 0;
+  const canManage = !!(ctx.user?.isOwner && state.currentSubview === "survivor");
+  if (!canManage) {
+    ui.detailsEliminateButton.classList.add("view-hidden");
     return;
   }
-  ui.detailsEliminateButton.disabled = !canEliminate(ctx, playerId);
-  ui.detailsEliminateButton.textContent = "Eliminated";
+  ui.detailsEliminateButton.classList.remove("view-hidden");
+  if (n) {
+    const place = Math.max(1, state.players.length - Number(n) + 1);
+    ui.detailsEliminateButton.disabled = false;
+    ui.detailsEliminateButton.textContent = `Uneliminate (${ordinal(place)} place)`;
+    return;
+  }
+  ui.detailsEliminateButton.disabled = false;
+  ui.detailsEliminateButton.textContent = "Eliminate";
 }
 
 function openDetails(leagueId, playerId) {
   const ctx = ctxForLeague(leagueId);
   const p = state.players.find((x) => x.id === playerId);
   if (!ctx || !p) return;
-  const draft = ensureDraftConfig(ctx);
-  const tribe = tribeForPlayer(draft, playerId);
+  const tribe = tribeForId(p.tribe);
+  const canManage = !!(ctx.user?.isOwner && state.currentSubview === "survivor");
   state.detailsTargetPlayerId = playerId;
   ui.detailsPhoto.src = p.photoUrl;
   ui.detailsPhoto.alt = p.name;
   ui.detailsName.textContent = p.name;
   ui.detailsAge.textContent = p.age ?? "Unknown";
-  ui.detailsTribe.textContent = tribe?.name || p.tribe || "Unknown";
+  ui.detailsTribe.textContent = tribe?.name || "Unknown";
   applyTribeBorder(ui.detailsPhoto, tribe);
   ui.detailsSeasons.innerHTML = "";
   normalizeSeasons(p.seasons).forEach((s) => {
@@ -790,15 +794,15 @@ function openDetails(leagueId, playerId) {
     li.textContent = "No season data available yet.";
     ui.detailsSeasons.appendChild(li);
   }
-  const isAdmin = ctx.membership.role === "admin";
-  ui.tribeAssignSection.classList.toggle("view-hidden", !isAdmin);
-  if (isAdmin) {
+  ui.tribeAssignSection.classList.toggle("view-hidden", !canManage);
+  ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
+  if (canManage) {
     ui.tribeAssignPanel.classList.add("view-hidden");
     ui.tribeSelect.innerHTML = `<option value="">None</option>`;
-    draft.tribes.forEach((t) => {
+    (state.db.tribes || []).forEach((t) => {
       const opt = document.createElement("option");
       opt.value = t.id;
-      opt.textContent = `■ ${t.name}`;
+      opt.textContent = `${t.name}`;
       opt.style.color = t.color || "#111";
       ui.tribeSelect.appendChild(opt);
     });
@@ -859,8 +863,7 @@ function teamCard(ctx, team) {
 }
 
 function playerCard(ctx, p) {
-  const draft = ensureDraftConfig(ctx);
-  const tribe = tribeForPlayer(draft, p.id);
+  const tribe = tribeForPlayer(p);
   const card = document.createElement("article");
   card.className = "player-card";
   const wrap = document.createElement("div");
@@ -872,7 +875,7 @@ function playerCard(ctx, p) {
   img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
-  const badge = eliminationBadge(ctx.draft, p.id);
+  const badge = eliminationBadge(p);
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);
   const h = document.createElement("h3");
@@ -905,7 +908,6 @@ function playerCard(ctx, p) {
 }
 
 function teamColumn(ctx, team) {
-  const draft = ensureDraftConfig(ctx);
   const col = document.createElement("article");
   col.className = "team-column";
   const h = document.createElement("h3");
@@ -933,9 +935,9 @@ function teamColumn(ctx, team) {
     img.src = p.photoUrl;
     img.alt = p.name;
     img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
-    applyTribeBorder(img, tribeForPlayer(draft, p.id));
+    applyTribeBorder(img, tribeForPlayer(p));
     wrap.appendChild(img);
-    const badge = eliminationBadge(ctx.draft, p.id);
+    const badge = eliminationBadge(p);
     if (badge) wrap.appendChild(badge);
     f.appendChild(wrap);
     const cap = document.createElement("figcaption");
@@ -973,7 +975,7 @@ function teamListCard(ctx, team) {
     names.forEach((player) => {
       const li = document.createElement("li");
       li.className = "team-list-player";
-      const eliminationNum = Number(ctx.draft.eliminationByPlayerId[player.id]) || 0;
+      const eliminationNum = Number(player.eliminated) || 0;
       if (eliminationNum > 0) {
         const place = Math.max(1, state.players.length - eliminationNum + 1);
         const elim = document.createElement("span");
@@ -987,7 +989,7 @@ function teamListCard(ctx, team) {
       nameSpan.textContent = player.name;
       li.appendChild(nameSpan);
 
-      const tribe = tribeForPlayer(ctx.draft, player.id);
+      const tribe = tribeForPlayer(player);
       if (tribe) {
         const tribeDot = document.createElement("span");
         tribeDot.className = "team-list-badge team-list-badge-tribe team-list-tribe-right";
@@ -1013,8 +1015,7 @@ function teamListCard(ctx, team) {
 }
 
 function teamDetailCard(ctx, player) {
-  const draft = ensureDraftConfig(ctx);
-  const tribe = tribeForPlayer(draft, player.id);
+  const tribe = tribeForPlayer(player);
   const card = document.createElement("article");
   card.className = "player-card";
   const wrap = document.createElement("div");
@@ -1026,7 +1027,7 @@ function teamDetailCard(ctx, player) {
   img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
-  const badge = eliminationBadge(ctx.draft, player.id);
+  const badge = eliminationBadge(player);
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);
   const h = document.createElement("h3");
@@ -1127,6 +1128,50 @@ function renderYourTeamView(ctx) {
     return;
   }
   players.forEach((player) => ui.yourTeamPlayers.appendChild(teamDetailCard(ctx, player)));
+}
+
+function renderSurvivorManagement(ctx) {
+  if (!ctx.user.isOwner) {
+    ui.survivorPlayersGrid.innerHTML = "";
+    ui.tribeManagementList.innerHTML = "";
+    return;
+  }
+
+  ui.tribeManagementList.innerHTML = "";
+  (state.db.tribes || []).forEach((tribe) => {
+    const row = document.createElement("div");
+    row.className = "tribe-management-row";
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.value = tribe.name;
+    const colorInput = document.createElement("select");
+    colorInput.innerHTML = ui.newGlobalTribeColor.innerHTML;
+    colorInput.value = tribe.color || "#999999";
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className = "secondary";
+    saveButton.textContent = "Save";
+    saveButton.addEventListener("click", async () => {
+      try {
+        await persistSurvivorTribe(ctx, tribe.id, nameInput.value, colorInput.value);
+        await syncDb();
+        msg("league", "Tribe updated.");
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+    row.appendChild(nameInput);
+    row.appendChild(colorInput);
+    row.appendChild(saveButton);
+    ui.tribeManagementList.appendChild(row);
+  });
+
+  ui.survivorPlayersGrid.innerHTML = "";
+  state.players.forEach((player) => {
+    ui.survivorPlayersGrid.appendChild(teamDetailCard(ctx, player));
+  });
 }
 
 function firstSeasonNumber(player) {
@@ -1237,10 +1282,9 @@ function renderTeamAssignments(ctx) {
   });
 }
 
-function tribeForPlayer(draft, playerId) {
-  const tribeId = draft.tribeByPlayerId?.[playerId];
-  if (!tribeId) return null;
-  return (draft.tribes || []).find((t) => t.id === tribeId) || null;
+function tribeForPlayer(player) {
+  if (!player?.tribe) return null;
+  return tribeForId(player.tribe);
 }
 
 function applyTribeBorder(imageEl, tribe) {
@@ -1397,8 +1441,11 @@ function renderLeague(leagueId) {
   ui.resetButton.classList.toggle("view-hidden", !canResetLeague(ctx.user, ctx.membership, ctx.league));
 
   const isAdmin = ctx.membership.role === "admin";
+  const isOwner = !!ctx.user.isOwner;
   if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
+  if (!isOwner && state.currentSubview === "survivor") state.currentSubview = "draft";
   ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
+  ui.survivorMgmtViewButton.classList.toggle("view-hidden", !isOwner);
   renderDraftOrderCard(ctx, draft);
   renderTurnBanner(ctx, draft);
   ui.teamAssignmentsView.classList.toggle("view-hidden", !isAdmin);
@@ -1417,13 +1464,13 @@ function renderLeague(leagueId) {
   ui.teamColumnsContainer.innerHTML = "";
   ctx.teams.forEach((t) => ui.teamsContainer.appendChild(teamCard(ctx, t)));
   ui.tribeFilterSelect.innerHTML = `<option value="all">All Tribes</option>`;
-  draft.tribes.forEach((tribe) => {
+  (state.db.tribes || []).forEach((tribe) => {
     const opt = document.createElement("option");
     opt.value = tribe.id;
     opt.textContent = tribe.name;
     ui.tribeFilterSelect.appendChild(opt);
   });
-  if (state.tribeFilter !== "all" && !draft.tribes.some((t) => t.id === state.tribeFilter)) {
+  if (state.tribeFilter !== "all" && !(state.db.tribes || []).some((t) => t.id === state.tribeFilter)) {
     state.tribeFilter = "all";
   }
   ui.tribeFilterSelect.value = state.tribeFilter;
@@ -1431,7 +1478,7 @@ function renderLeague(leagueId) {
   const unassignedPlayers = sortDraftPlayers(
     state.players
       .filter((p) => !draft.assignmentByPlayerId[p.id])
-      .filter((p) => state.tribeFilter === "all" || (draft.tribeByPlayerId[p.id] || "") === state.tribeFilter),
+      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
   );
   ui.draftFilterSelect.value = state.draftFilter;
   if (unassignedPlayers.length === 0) {
@@ -1444,6 +1491,7 @@ function renderLeague(leagueId) {
   }
   renderTeamsSubview(ctx);
   renderYourTeamView(ctx);
+  renderSurvivorManagement(ctx);
 }
 
 function render() {
@@ -1617,6 +1665,12 @@ function wire() {
     ui.topBarMenu.classList.remove("open");
     render();
   });
+  ui.survivorMgmtViewButton.addEventListener("click", () => {
+    state.currentSubview = "survivor";
+    state.isEditingTeamName = false;
+    ui.topBarMenu.classList.remove("open");
+    render();
+  });
   ui.draftOrderNavButton.addEventListener("click", () => {
     state.currentSubview = "order";
     state.isEditingTeamName = false;
@@ -1657,6 +1711,27 @@ function wire() {
     const r = route();
     if (r.name === "league") render();
   });
+  ui.createGlobalTribeButton.addEventListener("click", async () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || !ctx.user.isOwner) return;
+    const name = String(ui.newGlobalTribeName.value || "").trim();
+    if (!name) {
+      msg("league", "Tribe name is required.");
+      return;
+    }
+    try {
+      await persistSurvivorTribe(ctx, "", name, ui.newGlobalTribeColor.value || "#999999");
+      ui.newGlobalTribeName.value = "";
+      await syncDb();
+      msg("league", "Tribe created.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
+  });
 
   ui.resetButton.addEventListener("click", async () => {
     const r = route();
@@ -1683,13 +1758,12 @@ function wire() {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
-    if (!ctx) return;
+    if (!ctx || !ctx.user.isOwner || state.currentSubview !== "survivor") return;
     try {
-      if (ctx.draft.eliminationByPlayerId[state.detailsTargetPlayerId]) {
-        await undoEliminated(ctx, state.detailsTargetPlayerId);
-      } else {
-        await markEliminated(ctx, state.detailsTargetPlayerId);
-      }
+      const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
+      if (!player) return;
+      const nextElim = Number(player.eliminated) > 0 ? null : nextEliminationNumber();
+      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, player.tribe || null, nextElim);
       msg("", "");
       render();
       updateEliminateButton(ctxForLeague(r.leagueId), state.detailsTargetPlayerId);
@@ -1706,22 +1780,18 @@ function wire() {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
-    if (!ctx || ctx.membership.role !== "admin") return;
+    if (!ctx || !ctx.user.isOwner || state.currentSubview !== "survivor") return;
     const selectedTribeId = ui.tribeSelect.value || "";
     const newName = String(ui.newTribeName.value || "").trim();
     try {
-      const result = await persistTribeAssignment(
-        ctx,
-        state.detailsTargetPlayerId,
-        selectedTribeId,
-        newName,
-        ui.tribeColorSelect.value || "#e53935",
-      );
-      const draft = ensureDraftConfig(ctx);
-      draft.tribes = Array.isArray(result.tribes) ? result.tribes : [];
-      draft.tribeByPlayerId = result.tribeByPlayerId || {};
-      draft.updatedAt = nowIso();
-      saveDb();
+      let tribeIdToUse = selectedTribeId || null;
+      if (newName) {
+        const created = await persistSurvivorTribe(ctx, "", newName, ui.tribeColorSelect.value || "#e53935");
+        tribeIdToUse = created?.tribe?.id || null;
+      }
+      const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
+      const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
+      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, tribeIdToUse, eliminated);
       ui.tribeAssignPanel.classList.add("view-hidden");
       msg("league", "Tribe assignment saved.");
       render();

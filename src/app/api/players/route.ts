@@ -35,6 +35,7 @@ export async function GET() {
       photoUrl: true,
       age: true,
       tribe: true,
+      eliminated: true,
       seasons: true,
       seasonsPlayed: {
         orderBy: [{ seasonNumber: "asc" }, { seasonLabel: "asc" }],
@@ -62,6 +63,7 @@ export async function GET() {
         photoUrl: player.photoUrl,
         age: player.age,
         tribe: player.tribe,
+        eliminated: player.eliminated,
         seasons: relationalSeasons,
       };
     }
@@ -74,6 +76,7 @@ export async function GET() {
         photoUrl: player.photoUrl,
         age: player.age,
         tribe: player.tribe,
+        eliminated: player.eliminated,
         seasons,
       };
     }
@@ -85,6 +88,7 @@ export async function GET() {
       photoUrl: player.photoUrl,
       age: player.age,
       tribe: player.tribe,
+      eliminated: player.eliminated,
       seasons: Array.isArray(fallback?.seasons) ? fallback.seasons : [],
     };
   });

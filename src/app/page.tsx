@@ -23,6 +23,9 @@ export default function Home() {
             <button id="yourTeamViewButton" className="secondary" type="button">
               Your Team
             </button>
+            <button id="survivorMgmtViewButton" className="secondary view-hidden" type="button">
+              Survivor Management
+            </button>
             <div className="view-toggle">
               <button id="draftViewButton" className="secondary active-view" type="button">
                 Draft View
@@ -152,6 +155,39 @@ export default function Home() {
             </div>
             <p id="yourTeamMeta" className="muted" />
             <div id="yourTeamPlayers" className="players-grid" />
+          </section>
+
+          <section id="survivorManagementView" className="card view-hidden" aria-label="Survivor management">
+            <h3>Survivor Management</h3>
+            <p className="muted">Owner-only: manage tribes and elimination globally across all leagues.</p>
+            <section className="tribe-management card">
+              <h4>Tribe Management</h4>
+              <div id="tribeManagementList" className="tribe-management-list" />
+              <div className="tribe-management-create">
+                <label>
+                  New Tribe Name
+                  <input id="newGlobalTribeName" type="text" placeholder="Create new tribe" />
+                </label>
+                <label>
+                  Color
+                  <select id="newGlobalTribeColor">
+                    <option value="#e53935">Red</option>
+                    <option value="#1e88e5">Blue</option>
+                    <option value="#43a047">Green</option>
+                    <option value="#fbc02d">Yellow</option>
+                    <option value="#8e24aa">Purple</option>
+                    <option value="#fb8c00">Orange</option>
+                    <option value="#00897b">Teal</option>
+                    <option value="#6d4c41">Brown</option>
+                  </select>
+                </label>
+                <button id="createGlobalTribeButton" type="button" className="secondary">
+                  Create Tribe
+                </button>
+              </div>
+            </section>
+            <h4>Players</h4>
+            <div id="survivorPlayersGrid" className="players-grid" />
           </section>
 
           <p id="leagueMessage" className="message" />
