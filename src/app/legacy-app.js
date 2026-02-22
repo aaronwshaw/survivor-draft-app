@@ -193,7 +193,7 @@ function desiredLiveSyncInterval() {
   const ctx = ctxForLeague(r.leagueId);
   if (!ctx) return 0;
   const draft = ensureDraftConfig(ctx);
-  return draft.isDraftActive ? 2000 : 0;
+  return draft.isDraftActive ? 15000 : 0;
 }
 
 function isEditingField() {
