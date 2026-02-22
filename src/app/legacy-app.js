@@ -902,7 +902,12 @@ function playerCard(ctx, p) {
   } else {
     a.textContent = "Claim";
     const draft = ensureDraftConfig(ctx);
-    a.disabled = !myTeam(ctx) || (draft.isDraftActive && !myTurn(ctx, draft));
+    if (!draft.isDraftActive) {
+      a.classList.add("view-hidden");
+    } else {
+      a.classList.remove("view-hidden");
+      a.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
+    }
     a.addEventListener("click", async () => {
       try { await claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
