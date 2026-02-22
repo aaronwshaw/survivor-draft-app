@@ -34,7 +34,6 @@ const state = {
   session: { currentUserId: null },
   authMode: "login",
   currentSubview: "draft",
-  showTeamAssignments: false,
   showTurnPreview: false,
   draftFilter: "alpha",
   tribeFilter: "all",
@@ -80,12 +79,12 @@ const ui = {
   turnPreviewList: document.getElementById("turnPreviewList"),
   draftOrderNavButton: document.getElementById("draftOrderNavButton"),
   draftOrderView: document.getElementById("draftOrderView"),
+  leagueManagementView: document.getElementById("leagueManagementView"),
   draftTurnStatus: document.getElementById("draftTurnStatus"),
   draftOrderList: document.getElementById("draftOrderList"),
   randomizeDraftOrderButton: document.getElementById("randomizeDraftOrderButton"),
   startDraftButton: document.getElementById("startDraftButton"),
   stopDraftButton: document.getElementById("stopDraftButton"),
-  teamAssignmentsButton: document.getElementById("teamAssignmentsButton"),
   teamAssignmentsView: document.getElementById("teamAssignmentsView"),
   teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
@@ -668,7 +667,7 @@ function updateDraftSubview() {
   const isYourTeam = state.currentSubview === "yourteam";
   ui.draftLayout.classList.toggle("view-hidden", !isDraft);
   ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
-  ui.draftOrderView.classList.toggle("view-hidden", !isOrder);
+  ui.leagueManagementView.classList.toggle("view-hidden", !isOrder);
   ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
   ui.leagueInfoCard.classList.toggle("view-hidden", !isYourTeam);
   ui.draftViewButton.classList.toggle("active-view", isDraft);
@@ -1387,13 +1386,8 @@ function renderLeague(leagueId) {
   ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
   renderDraftOrderCard(ctx, draft);
   renderTurnBanner(ctx, draft);
-  if (!isAdmin) state.showTeamAssignments = false;
-  ui.teamAssignmentsButton.classList.toggle("view-hidden", !isAdmin);
-  ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
-  ui.teamAssignmentsView.classList.toggle("view-hidden", !(isAdmin && state.showTeamAssignments && state.currentSubview !== "order"));
-  if (isAdmin && state.showTeamAssignments) {
-    renderTeamAssignments(ctx);
-  }
+  ui.teamAssignmentsView.classList.toggle("view-hidden", !isAdmin);
+  if (isAdmin) renderTeamAssignments(ctx);
 
   ui.teamsViewButton.textContent = isMobileLayout() ? "Teams View" : "Teams Photo View";
   const teamsTitle = document.getElementById("teamsColumnsTitle");
@@ -1588,15 +1582,6 @@ function wire() {
       msg("league", err.message);
       render();
     }
-  });
-  ui.teamAssignmentsButton.addEventListener("click", () => {
-    const r = route();
-    if (r.name !== "league") return;
-    const ctx = ctxForLeague(r.leagueId);
-    if (!ctx || ctx.membership.role !== "admin") return;
-    state.showTeamAssignments = !state.showTeamAssignments;
-    ui.teamAssignmentsButton.textContent = state.showTeamAssignments ? "Close Assignments" : "Team Assignments";
-    render();
   });
   ui.draftViewButton.addEventListener("click", () => {
     state.currentSubview = "draft";

@@ -17,11 +17,8 @@ export default function Home() {
             <button id="backToLeaguesButton" className="secondary" type="button">
               Back to Leagues
             </button>
-            <button id="teamAssignmentsButton" className="secondary view-hidden" type="button">
-              Team Assignments
-            </button>
             <button id="draftOrderNavButton" className="secondary view-hidden" type="button">
-              Draft Order
+              League Management
             </button>
             <button id="yourTeamViewButton" className="secondary" type="button">
               Your Team
@@ -140,24 +137,6 @@ export default function Home() {
             </div>
           </div>
 
-          <section id="draftOrderView" className="card view-hidden" aria-labelledby="draftAdminTitle">
-            <h3 id="draftAdminTitle">Draft Order Management</h3>
-            <p className="muted">Set the team order, randomize, and start a snake draft.</p>
-            <div id="draftTurnStatus" className="message" />
-            <div id="draftOrderList" className="draft-order-list" />
-            <div className="button-row">
-              <button id="randomizeDraftOrderButton" type="button" className="secondary">
-                Randomize Order
-              </button>
-              <button id="startDraftButton" type="button">
-                Start Draft
-              </button>
-              <button id="stopDraftButton" type="button" className="danger-button view-hidden">
-                Stop Draft
-              </button>
-            </div>
-          </section>
-
           <section id="yourTeamView" className="card view-hidden" aria-label="Your team">
             <div className="your-team-edit">
               <h4 id="yourTeamNameDisplay" className="your-team-name" />
@@ -177,22 +156,42 @@ export default function Home() {
 
           <p id="leagueMessage" className="message" />
 
-          <section id="teamAssignmentsView" className="card view-hidden" aria-labelledby="teamAssignmentsTitle">
-            <h3 id="teamAssignmentsTitle">Team Assignments</h3>
-            <p className="muted">Admins can reassign members between teams.</p>
-            <div className="team-assignments-table-wrap">
-              <table className="team-assignments-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Username</th>
-                    <th>Assigned Team</th>
-                  </tr>
-                </thead>
-                <tbody id="teamAssignmentsTableBody" />
-              </table>
-            </div>
-          </section>
+          <div id="leagueManagementView" className="management-grid view-hidden">
+            <section id="teamAssignmentsView" className="card" aria-labelledby="teamAssignmentsTitle">
+              <h3 id="teamAssignmentsTitle">Team Assignments</h3>
+              <p className="muted">Admins can reassign members between teams.</p>
+              <div className="team-assignments-table-wrap">
+                <table className="team-assignments-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Username</th>
+                      <th>Assigned Team</th>
+                    </tr>
+                  </thead>
+                  <tbody id="teamAssignmentsTableBody" />
+                </table>
+              </div>
+            </section>
+
+            <section id="draftOrderView" className="card" aria-labelledby="draftAdminTitle">
+              <h3 id="draftAdminTitle">Draft Order Management</h3>
+              <p className="muted">Set the team order, randomize, and start a snake draft.</p>
+              <div className="button-row">
+                <button id="randomizeDraftOrderButton" type="button" className="secondary">
+                  Randomize Order
+                </button>
+                <button id="startDraftButton" type="button">
+                  Start Draft
+                </button>
+                <button id="stopDraftButton" type="button" className="danger-button view-hidden">
+                  Stop Draft
+                </button>
+              </div>
+              <div id="draftTurnStatus" className="message" />
+              <div id="draftOrderList" className="draft-order-list" />
+            </section>
+          </div>
 
           <div id="draftLayout" className="layout">
             <section className="teams-panel" aria-labelledby="teamsTitle">

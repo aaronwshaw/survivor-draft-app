@@ -332,6 +332,13 @@ select {
   gap: 0.35rem;
 }
 
+.management-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
@@ -879,6 +886,10 @@ button:hover {
 }
 
 @media (max-width: 768px) {
+  .management-grid {
+    grid-template-columns: 1fr;
+  }
+
   .layout {
     grid-template-columns: 1fr;
   }
