@@ -292,14 +292,6 @@ export default function Home() {
           </button>
           <img id="detailsPhoto" className="details-photo" alt="" />
           <h3 id="detailsName" />
-          <p>
-            <strong>Age:</strong> <span id="detailsAge" />
-          </p>
-          <p>
-            <strong>Tribe:</strong> <span id="detailsTribe" />
-          </p>
-          <h4>Seasons</h4>
-          <ul id="detailsSeasons" />
           <div className="details-controls-row">
             <section id="tribeAssignSection" className="view-hidden">
               <button id="tribeAssignToggle" type="button" className="secondary">
@@ -311,23 +303,6 @@ export default function Home() {
                     Existing Tribe
                     <select id="tribeSelect">
                       <option value="">None</option>
-                    </select>
-                  </label>
-                  <label>
-                    New Tribe Name
-                    <input id="newTribeName" type="text" placeholder="Create new tribe" />
-                  </label>
-                  <label>
-                    Tribe Color
-                    <select id="tribeColorSelect">
-                      <option value="#e53935">Red</option>
-                      <option value="#1e88e5">Blue</option>
-                      <option value="#43a047">Green</option>
-                      <option value="#fbc02d">Yellow</option>
-                      <option value="#8e24aa">Purple</option>
-                      <option value="#fb8c00">Orange</option>
-                      <option value="#00897b">Teal</option>
-                      <option value="#6d4c41">Brown</option>
                     </select>
                   </label>
                   <button id="saveTribeButton" type="button" className="secondary">
@@ -345,6 +320,14 @@ export default function Home() {
               </button>
             </div>
           </div>
+          <p>
+            <strong>Age:</strong> <span id="detailsAge" />
+          </p>
+          <p>
+            <strong>Tribe:</strong> <span id="detailsTribe" />
+          </p>
+          <h4>Seasons</h4>
+          <ul id="detailsSeasons" />
         </div>
       </div>
 

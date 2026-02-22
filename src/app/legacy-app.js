@@ -807,7 +807,6 @@ function openDetails(leagueId, playerId) {
       ui.tribeSelect.appendChild(opt);
     });
     ui.tribeSelect.value = tribe?.id || "";
-    ui.newTribeName.value = "";
   }
   updateEliminateButton(ctx, playerId);
   ui.detailsModal.classList.remove("hidden");
@@ -1782,16 +1781,10 @@ function wire() {
     const ctx = ctxForLeague(r.leagueId);
     if (!ctx || !ctx.user.isOwner || state.currentSubview !== "survivor") return;
     const selectedTribeId = ui.tribeSelect.value || "";
-    const newName = String(ui.newTribeName.value || "").trim();
     try {
-      let tribeIdToUse = selectedTribeId || null;
-      if (newName) {
-        const created = await persistSurvivorTribe(ctx, "", newName, ui.tribeColorSelect.value || "#e53935");
-        tribeIdToUse = created?.tribe?.id || null;
-      }
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
-      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, tribeIdToUse, eliminated);
+      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, selectedTribeId || null, eliminated);
       ui.tribeAssignPanel.classList.add("view-hidden");
       msg("league", "Tribe assignment saved.");
       render();
