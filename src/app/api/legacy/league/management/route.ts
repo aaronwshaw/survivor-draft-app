@@ -30,6 +30,11 @@ type Body =
       userId?: string;
       leagueId?: string;
       targetTeamId?: string;
+    }
+  | {
+      action: "deleteLeague";
+      userId?: string;
+      leagueId?: string;
     };
 
 async function requireAdmin(tx: Prisma.TransactionClient, userId: string, leagueId: string) {
@@ -53,6 +58,16 @@ export async function POST(request: Request) {
   }
 
   try {
+    if (action === "deleteLeague") {
+      await prisma.$transaction(async (tx) => {
+        await requireAdmin(tx, userId, leagueId);
+        await tx.league.delete({
+          where: { id: leagueId },
+        });
+      });
+      return NextResponse.json({ ok: true });
+    }
+
     if (action === "removeUser") {
       const targetUserId = String((body as { targetUserId?: string } | null)?.targetUserId || "");
       if (!targetUserId) {

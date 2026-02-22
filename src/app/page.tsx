@@ -232,6 +232,9 @@ export default function Home() {
                 <button id="stopDraftButton" type="button" className="danger-button view-hidden">
                   Stop Draft
                 </button>
+                <button id="deleteLeagueMgmtButton" type="button" className="danger-button">
+                  Delete League
+                </button>
               </div>
               <div id="draftTurnStatus" className="message" />
               <div id="draftOrderList" className="draft-order-list" />

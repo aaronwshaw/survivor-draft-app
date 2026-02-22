@@ -89,6 +89,7 @@ const ui = {
   randomizeDraftOrderButton: document.getElementById("randomizeDraftOrderButton"),
   startDraftButton: document.getElementById("startDraftButton"),
   stopDraftButton: document.getElementById("stopDraftButton"),
+  deleteLeagueMgmtButton: document.getElementById("deleteLeagueMgmtButton"),
   teamAssignmentsView: document.getElementById("teamAssignmentsView"),
   addTeamButton: document.getElementById("addTeamButton"),
   teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
@@ -490,6 +491,17 @@ async function deleteTeamFromLeague(ctx, targetTeamId) {
       userId: ctx.user.id,
       leagueId: ctx.league.id,
       targetTeamId,
+    }),
+  });
+}
+
+async function deleteLeagueFromManagement(ctx) {
+  return apiJson("/api/legacy/league/management", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "deleteLeague",
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
     }),
   });
 }
@@ -1529,6 +1541,7 @@ function renderDraftOrderCard(ctx, draft) {
   ui.startDraftButton.classList.toggle("view-hidden", draft.isDraftActive);
   ui.stopDraftButton.classList.toggle("view-hidden", !draft.isDraftActive);
   ui.stopDraftButton.disabled = !isAdmin || !draft.isDraftActive;
+  ui.deleteLeagueMgmtButton.disabled = !isAdmin;
 }
 
 function renderLeague(leagueId) {
@@ -1755,6 +1768,23 @@ function wire() {
     try {
       await stopDraft(ctx);
       msg("league", "Draft stopped. Order is locked as-is.");
+      render();
+    } catch (err) {
+      msg("league", err.message);
+      render();
+    }
+  });
+  ui.deleteLeagueMgmtButton.addEventListener("click", async () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    if (!confirm("Delete this league permanently? This cannot be undone.")) return;
+    try {
+      await deleteLeagueFromManagement(ctx);
+      msg("leagues", "League deleted.");
+      go("#/leagues");
+      await syncDb();
       render();
     } catch (err) {
       msg("league", err.message);
