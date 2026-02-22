@@ -193,7 +193,7 @@ function desiredLiveSyncInterval() {
   const ctx = ctxForLeague(r.leagueId);
   if (!ctx) return 0;
   const draft = ensureDraftConfig(ctx);
-  return draft.isDraftActive ? 15000 : 0;
+  return draft.isDraftActive ? 2000 : 0;
 }
 
 function isEditingField() {
@@ -605,10 +605,7 @@ async function assignPlayer(ctx, playerId, teamIdOrNull) {
 async function claimPlayer(ctx, playerId) {
   if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
   const draft = ensureDraftConfig(ctx);
-  if (!draft.isDraftActive) {
-    throw new Error("Draft has not started yet.");
-  }
-  if (!myTurn(ctx, draft)) {
+  if (draft.isDraftActive && !myTurn(ctx, draft)) {
     throw new Error("It is not your turn.");
   }
   const mine = myTeam(ctx);
@@ -903,7 +900,8 @@ function playerCard(ctx, p) {
     a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
   } else {
     a.textContent = "Claim";
-    a.disabled = !myTeam(ctx) || !draft.isDraftActive || !myTurn(ctx, draft);
+    const draft = ensureDraftConfig(ctx);
+    a.disabled = !myTeam(ctx) || (draft.isDraftActive && !myTurn(ctx, draft));
     a.addEventListener("click", async () => {
       try { await claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
