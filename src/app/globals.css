@@ -209,6 +209,30 @@ select {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+@media (min-width: 900px) {
+  .leagues-grid {
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.9fr);
+    align-items: start;
+  }
+
+  .leagues-grid > section:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+
+  .leagues-grid > section:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0.8rem;
+  }
+
+  .leagues-grid > section:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0.8rem;
+  }
+}
+
 .leagues-list {
   display: grid;
   gap: 0.6rem;

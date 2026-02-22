@@ -691,7 +691,7 @@ function updateDraftSubview() {
   ui.leagueManagementView.classList.toggle("view-hidden", !isOrder);
   ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
   ui.survivorManagementView.classList.toggle("view-hidden", !isSurvivor);
-  ui.leagueInfoCard.classList.toggle("view-hidden", !isYourTeam);
+  ui.leagueInfoCard.classList.toggle("view-hidden", !(isYourTeam || isOrder));
   ui.draftViewButton.classList.toggle("active-view", isDraft);
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
