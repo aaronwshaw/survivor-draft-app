@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
   const [users, leagues, teams, allMemberships, draftStates] = await Promise.all([
     prisma.user.findMany({
-      select: { id: true, email: true, displayName: true },
+      select: { id: true, email: true, displayName: true, isOwner: true },
     }),
     prisma.league.findMany({
       where: { id: { in: leagueIds } },

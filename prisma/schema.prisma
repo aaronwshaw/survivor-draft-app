@@ -24,6 +24,7 @@ model User {
   email        String       @unique
   passwordHash String?
   displayName  String?
+  isOwner      Boolean      @default(false)
   createdAt    DateTime     @default(now())
   memberships  Membership[]
   ownedLeagues League[]     @relation("LeagueOwner")

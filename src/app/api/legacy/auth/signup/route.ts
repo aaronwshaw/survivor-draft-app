@@ -33,7 +33,7 @@ export async function POST(request: Request) {
         displayName,
         passwordHash: hashPassword(password),
       },
-      select: { id: true, email: true, displayName: true },
+      select: { id: true, email: true, displayName: true, isOwner: true },
     });
 
     return NextResponse.json({ user });

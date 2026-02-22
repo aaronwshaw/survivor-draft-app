@@ -18,14 +18,14 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { email: username },
-      select: { id: true, email: true, displayName: true, passwordHash: true },
+      select: { id: true, email: true, displayName: true, isOwner: true, passwordHash: true },
     });
     if (!user || !user.passwordHash || user.passwordHash !== hashPassword(password)) {
       return NextResponse.json({ error: "Incorrect username or password." }, { status: 401 });
     }
 
     return NextResponse.json({
-      user: { id: user.id, email: user.email, displayName: user.displayName || user.email },
+      user: { id: user.id, email: user.email, displayName: user.displayName || user.email, isOwner: user.isOwner },
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") {
