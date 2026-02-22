@@ -447,6 +447,11 @@ select {
     overflow: hidden;
   }
 
+  body.draft-desktop-lock #leagueView .turn-banner {
+    position: static;
+    top: auto;
+  }
+
   body.draft-desktop-lock .app-shell {
     height: calc(100vh - 78px);
     overflow: hidden;
@@ -1003,3 +1008,4 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
