@@ -30,7 +30,7 @@ export async function createLeagueWithDefaults(leagueName: string, ownerUserId: 
 
     let adminTeamId = "";
     const draftOrderTeamIds: string[] = [];
-    for (let i = 1; i <= 8; i += 1) {
+    for (let i = 1; i <= 1; i += 1) {
       const createdTeam = await tx.team.create({
         data: {
           leagueId: league.id,
@@ -95,7 +95,7 @@ export async function joinLeagueByInviteCode(inviteCodeRaw: string, userId: stri
       orderBy: { slotNumber: "asc" },
     });
     if (!firstOpen) {
-      throw new Error("This league is full (8/8 teams taken).");
+      throw new Error("No open team is available. Ask an admin to add a team.");
     }
 
     const claim = await tx.team.updateMany({

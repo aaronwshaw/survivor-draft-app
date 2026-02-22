@@ -196,15 +196,22 @@ export default function Home() {
           <div id="leagueManagementView" className="management-grid view-hidden">
             <section id="teamAssignmentsView" className="card" aria-labelledby="teamAssignmentsTitle">
               <h3 id="teamAssignmentsTitle">Team Assignments</h3>
-              <p className="muted">Admins can reassign members between teams.</p>
+              <p className="muted">Admins can edit member names, team names, and team assignments.</p>
+              <div className="button-row">
+                <button id="addTeamButton" type="button" className="secondary">
+                  Add Team
+                </button>
+              </div>
               <p id="teamAssignmentsMessage" className="message team-assignments-message" />
               <div className="team-assignments-table-wrap">
                 <table className="team-assignments-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
                       <th>Username</th>
-                      <th>Assigned Team</th>
+                      <th>Name</th>
+                      <th>Team Name</th>
+                      <th>Team Assignment</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody id="teamAssignmentsTableBody" />

@@ -42,6 +42,7 @@ const state = {
   teamsViewTeamId: null,
   isEditingTeamName: false,
   isEditingGlobalTribeId: null,
+  teamAssignmentEditingTeamId: null,
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0,
@@ -88,6 +89,7 @@ const ui = {
   startDraftButton: document.getElementById("startDraftButton"),
   stopDraftButton: document.getElementById("stopDraftButton"),
   teamAssignmentsView: document.getElementById("teamAssignmentsView"),
+  addTeamButton: document.getElementById("addTeamButton"),
   teamAssignmentsTableBody: document.getElementById("teamAssignmentsTableBody"),
   teamAssignmentsMessage: document.getElementById("teamAssignmentsMessage"),
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
@@ -443,47 +445,52 @@ async function joinLeague(rawCode, userId) {
   return result.result;
 }
 
-function adminAssignUserToTeam(ctx, userEmail, teamId) {
-  if (ctx.membership.role !== "admin") throw new Error("Only admins can assign users to teams.");
-  const normalizedEmail = email(userEmail);
-  if (!normalizedEmail) throw new Error("User email is required.");
+async function persistLeagueManagementUpdate(ctx, payload) {
+  return apiJson("/api/legacy/league/management", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "updateRow",
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      ...payload,
+    }),
+  });
+}
 
-  const targetUser = state.db.users.find((u) => u.email === normalizedEmail);
-  if (!targetUser) throw new Error("User not found. They need to sign up first.");
+async function addLeagueTeam(ctx, teamName = "") {
+  return apiJson("/api/legacy/league/management", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "addTeam",
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      teamName,
+    }),
+  });
+}
 
-  const targetTeam = state.db.teams.find((t) => t.id === teamId && t.leagueId === ctx.league.id);
-  if (!targetTeam) throw new Error("Target team not found.");
+async function removeUserFromLeague(ctx, targetUserId) {
+  return apiJson("/api/legacy/league/management", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "removeUser",
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      targetUserId,
+    }),
+  });
+}
 
-  const existingMembership = membership(targetUser.id, ctx.league.id);
-  if (!existingMembership) throw new Error("User is not in this league.");
-
-  const currentTeam = existingMembership.teamId
-    ? state.db.teams.find((t) => t.id === existingMembership.teamId && t.leagueId === ctx.league.id)
-    : null;
-  const occupyingUserId = targetTeam.ownerUserId && targetTeam.ownerUserId !== targetUser.id
-    ? targetTeam.ownerUserId
-    : null;
-  const occupyingMembership = occupyingUserId ? membership(occupyingUserId, ctx.league.id) : null;
-  if (occupyingUserId && !occupyingMembership) throw new Error("Target team owner is missing membership data.");
-
-  if (currentTeam && currentTeam.id !== targetTeam.id) {
-    currentTeam.ownerUserId = null;
-  }
-
-  targetTeam.ownerUserId = targetUser.id;
-  existingMembership.teamId = targetTeam.id;
-
-  if (occupyingUserId && occupyingMembership) {
-    if (currentTeam && currentTeam.id !== targetTeam.id) {
-      currentTeam.ownerUserId = occupyingUserId;
-      occupyingMembership.teamId = currentTeam.id;
-    } else {
-      occupyingMembership.teamId = null;
-    }
-  }
-
-  saveDb();
-  return targetTeam;
+async function deleteTeamFromLeague(ctx, targetTeamId) {
+  return apiJson("/api/legacy/league/management", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "deleteTeam",
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      targetTeamId,
+    }),
+  });
 }
 
 function canRenameTeam(user, m, team) { return !!(user && m && team && (m.role === "admin" || team.ownerUserId === user.id)); }
@@ -1233,50 +1240,140 @@ function renderLeagues() {
 function renderTeamAssignments(ctx) {
   ui.teamAssignmentsTableBody.innerHTML = "";
   ui.teamAssignmentsMessage.textContent = "";
-  const rows = state.db.memberships
-    .filter((m) => m.leagueId === ctx.league.id)
-    .map((m) => {
-      const u = state.db.users.find((user) => user.id === m.userId);
-      const t = m.teamId ? state.db.teams.find((team) => team.id === m.teamId && team.leagueId === ctx.league.id) : null;
-      return { membership: m, user: u, team: t };
-    })
-    .filter((r) => !!r.user)
-    .sort((a, b) => (a.user.displayName || a.user.email).localeCompare(b.user.displayName || b.user.email));
+  const leagueMemberships = state.db.memberships.filter((m) => m.leagueId === ctx.league.id);
+  const teams = [...ctx.teams].sort((a, b) => a.slotNumber - b.slotNumber);
 
-  rows.forEach((row) => {
+  teams.forEach((team) => {
+    const teamMembership = leagueMemberships.find((m) => m.teamId === team.id) || null;
+    const teamUser = teamMembership ? state.db.users.find((user) => user.id === teamMembership.userId) : null;
+    const rowKey = team.id;
+    const isEditing = state.teamAssignmentEditingTeamId === rowKey;
     const tr = document.createElement("tr");
-    const nameTd = document.createElement("td");
     const emailTd = document.createElement("td");
+    const nameTd = document.createElement("td");
+    const teamNameTd = document.createElement("td");
     const teamTd = document.createElement("td");
+    const actionsTd = document.createElement("td");
 
-    nameTd.textContent = row.user.displayName || row.user.email;
-    emailTd.textContent = row.user.email;
+    emailTd.textContent = teamUser?.email || "";
 
-    const select = document.createElement("select");
-    ctx.teams.forEach((team) => {
-      const option = document.createElement("option");
-      option.value = team.id;
-      option.textContent = `Team ${team.slotNumber} (${team.name})`;
-      select.appendChild(option);
-    });
-    if (row.team) {
-      select.value = row.team.id;
-    }
-    select.addEventListener("change", () => {
-      try {
-        adminAssignUserToTeam(ctx, row.user.email, select.value);
-        showTeamAssignmentsMessage(`${row.user.displayName || row.user.email} reassigned.`);
+    if (isEditing) {
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.value = teamUser?.displayName || "";
+      nameTd.appendChild(nameInput);
+
+      const teamNameInput = document.createElement("input");
+      teamNameInput.type = "text";
+      teamNameInput.value = team.name || "";
+      teamNameTd.appendChild(teamNameInput);
+
+      const select = document.createElement("select");
+      teams.forEach((leagueTeam) => {
+        const option = document.createElement("option");
+        option.value = leagueTeam.id;
+        option.textContent = `Team ${leagueTeam.slotNumber} (${leagueTeam.name})`;
+        select.appendChild(option);
+      });
+      select.value = team.id;
+      teamTd.appendChild(select);
+
+      const saveButton = document.createElement("button");
+      saveButton.type = "button";
+      saveButton.textContent = "Save";
+      saveButton.addEventListener("click", async () => {
+        try {
+          await persistLeagueManagementUpdate(ctx, {
+            targetTeamId: team.id,
+            targetUserId: teamMembership?.userId || "",
+            displayName: nameInput.value,
+            teamName: teamNameInput.value,
+            assignTeamId: select.value,
+          });
+          state.teamAssignmentEditingTeamId = null;
+          await syncDb();
+          showTeamAssignmentsMessage("Team assignment updated.");
+          render();
+        } catch (err) {
+          showTeamAssignmentsMessage(err.message);
+          render();
+        }
+      });
+
+      const cancelButton = document.createElement("button");
+      cancelButton.type = "button";
+      cancelButton.className = "secondary";
+      cancelButton.textContent = "Cancel";
+      cancelButton.addEventListener("click", () => {
+        state.teamAssignmentEditingTeamId = null;
         render();
-      } catch (err) {
-        showTeamAssignmentsMessage(err.message);
-        render();
+      });
+      actionsTd.appendChild(saveButton);
+      actionsTd.appendChild(cancelButton);
+    } else {
+      nameTd.textContent = teamUser?.displayName || "";
+      teamNameTd.textContent = team.name || "";
+      if (teamMembership) {
+        teamTd.textContent = `Team ${team.slotNumber} (${team.name})`;
+      } else {
+        teamTd.textContent = `Team ${team.slotNumber} (${team.name})`;
       }
-    });
-    teamTd.appendChild(select);
 
-    tr.appendChild(nameTd);
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "secondary";
+      editButton.textContent = "Edit";
+      editButton.addEventListener("click", () => {
+        state.teamAssignmentEditingTeamId = rowKey;
+        render();
+      });
+      actionsTd.appendChild(editButton);
+
+      if (teamMembership?.userId) {
+        const removeUserButton = document.createElement("button");
+        removeUserButton.type = "button";
+        removeUserButton.className = "danger-button";
+        removeUserButton.textContent = "Remove User";
+        removeUserButton.addEventListener("click", async () => {
+          if (!confirm("Remove this user from the league?")) return;
+          try {
+            await removeUserFromLeague(ctx, teamMembership.userId);
+            await syncDb();
+            showTeamAssignmentsMessage("User removed from league.");
+            render();
+          } catch (err) {
+            showTeamAssignmentsMessage(err.message);
+            render();
+          }
+        });
+        actionsTd.appendChild(removeUserButton);
+      }
+
+      const deleteTeamButton = document.createElement("button");
+      deleteTeamButton.type = "button";
+      deleteTeamButton.className = "danger-button";
+      deleteTeamButton.textContent = "Delete Team";
+      deleteTeamButton.disabled = teams.length <= 1;
+      deleteTeamButton.addEventListener("click", async () => {
+        if (!confirm("Delete this team? If it has a user, that user will be removed from the league.")) return;
+        try {
+          await deleteTeamFromLeague(ctx, team.id);
+          await syncDb();
+          showTeamAssignmentsMessage("Team deleted.");
+          render();
+        } catch (err) {
+          showTeamAssignmentsMessage(err.message);
+          render();
+        }
+      });
+      actionsTd.appendChild(deleteTeamButton);
+    }
+
     tr.appendChild(emailTd);
+    tr.appendChild(nameTd);
+    tr.appendChild(teamNameTd);
     tr.appendChild(teamTd);
+    tr.appendChild(actionsTd);
     ui.teamAssignmentsTableBody.appendChild(tr);
   });
 }
@@ -1459,6 +1556,11 @@ function renderLeague(leagueId) {
     teamsTitle.textContent = "Teams";
   }
   ui.teamColumnsContainer.className = isMobileLayout() ? "team-list-grid" : "team-columns-grid";
+  if (isMobileLayout()) {
+    ui.teamColumnsContainer.style.removeProperty("grid-template-columns");
+  } else {
+    ui.teamColumnsContainer.style.gridTemplateColumns = `repeat(${Math.max(1, ctx.teams.length)}, minmax(0, 1fr))`;
+  }
 
   updateDraftSubview();
   ui.teamsContainer.innerHTML = "";
@@ -1712,6 +1814,21 @@ function wire() {
     state.tribeFilter = ui.tribeFilterSelect.value || "all";
     const r = route();
     if (r.name === "league") render();
+  });
+  ui.addTeamButton.addEventListener("click", async () => {
+    const r = route();
+    if (r.name !== "league") return;
+    const ctx = ctxForLeague(r.leagueId);
+    if (!ctx || ctx.membership.role !== "admin") return;
+    try {
+      await addLeagueTeam(ctx);
+      await syncDb();
+      showTeamAssignmentsMessage("Team added.");
+      render();
+    } catch (err) {
+      showTeamAssignmentsMessage(err.message);
+      render();
+    }
   });
   ui.createGlobalTribeButton.addEventListener("click", async () => {
     const r = route();
