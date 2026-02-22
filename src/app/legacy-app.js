@@ -605,10 +605,7 @@ async function assignPlayer(ctx, playerId, teamIdOrNull) {
 async function claimPlayer(ctx, playerId) {
   if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
   const draft = ensureDraftConfig(ctx);
-  if (!draft.isDraftActive) {
-    throw new Error("Draft has not started yet.");
-  }
-  if (!myTurn(ctx, draft)) {
+  if (draft.isDraftActive && !myTurn(ctx, draft)) {
     throw new Error("It is not your turn.");
   }
   const mine = myTeam(ctx);
@@ -903,12 +900,7 @@ function playerCard(ctx, p) {
     a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
   } else {
     a.textContent = "Claim";
-    if (!draft.isDraftActive) {
-      a.classList.add("view-hidden");
-    } else {
-      a.classList.remove("view-hidden");
-      a.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
-    }
+    a.disabled = !myTeam(ctx) || (draft.isDraftActive && !myTurn(ctx, draft));
     a.addEventListener("click", async () => {
       try { await claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
@@ -1545,12 +1537,9 @@ function renderLeague(leagueId) {
 
   const isAdmin = ctx.membership.role === "admin";
   const isOwner = !!ctx.user.isOwner;
-  const allAssigned = state.players.length > 0 && state.players.every((player) => !!draft.assignmentByPlayerId[player.id]);
-  const hideDraftNav = allAssigned && !isAdmin && !isMobileLayout();
   if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
   if (!isOwner && state.currentSubview === "survivor") state.currentSubview = "draft";
-  if (hideDraftNav && state.currentSubview === "draft") state.currentSubview = "teams";
-  ui.draftViewButton.classList.toggle("view-hidden", hideDraftNav);
+  ui.draftViewButton.classList.remove("view-hidden");
   ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
   ui.survivorMgmtViewButton.classList.toggle("view-hidden", !isOwner);
   renderDraftOrderCard(ctx, draft);
@@ -1587,11 +1576,10 @@ function renderLeague(leagueId) {
   }
   ui.tribeFilterSelect.value = state.tribeFilter;
 
-  const playersForPool = draft.isDraftActive
-    ? state.players.filter((p) => !draft.assignmentByPlayerId[p.id])
-    : state.players;
   const unassignedPlayers = sortDraftPlayers(
-    playersForPool.filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+    state.players
+      .filter((p) => !draft.assignmentByPlayerId[p.id])
+      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
   );
   ui.draftFilterSelect.value = state.draftFilter;
   if (unassignedPlayers.length === 0) {
