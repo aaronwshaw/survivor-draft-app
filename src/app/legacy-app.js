@@ -265,7 +265,10 @@ function setAuthMode(mode) {
   state.authMode = mode === "signup" ? "signup" : "login";
   const isSignup = state.authMode === "signup";
   ui.authDisplayNameField.hidden = !isSignup;
+  ui.authDisplayNameField.classList.toggle("view-hidden", !isSignup);
+  ui.authDisplayNameField.style.display = isSignup ? "" : "none";
   ui.authDisplayName.required = isSignup;
+  if (!isSignup) ui.authDisplayName.value = "";
   ui.authSubmitButton.textContent = isSignup ? "Create Account" : "Login";
   ui.landingLoginOption.classList.toggle("active-mode", !isSignup);
   ui.landingCreateOption.classList.toggle("active-mode", isSignup);

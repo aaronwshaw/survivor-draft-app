@@ -86,7 +86,7 @@ export default function Home() {
                     <input id="authPassword" type="password" required placeholder="Enter password" />
                   </label>
                   <label id="authDisplayNameField" hidden>
-                    Display Name (for create account)
+                    Display Name
                     <input id="authDisplayName" type="text" placeholder="Your name" />
                   </label>
                   <div className="button-row">
