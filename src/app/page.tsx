@@ -49,40 +49,65 @@ export default function Home() {
 
       <main className="app-shell">
         <section id="loginView" className="page-view" aria-labelledby="loginTitle">
-          <img className="landing-top-banner" src="/photos/50logo.png" alt="Survivor 50 banner" />
-          <div className="landing-hero card">
-            <h2 id="loginTitle">Welcome to the Survivor Fantasy Draft</h2>
-            <p className="muted">Log in or create an account with your username and password.</p>
-            <div className="landing-options">
-              <button id="landingLoginOption" type="button" className="active-mode">
-                Login
-              </button>
-              <button id="landingCreateOption" type="button" className="secondary">
-                Create Account
-              </button>
+          <div className="landing-stage">
+            <img className="landing-top-banner" src="/photos/50logo.png" alt="Survivor 50 banner" />
+            <div className="landing-stage-overlay">
+              <section className="landing-copy">
+                <p className="landing-eyebrow">Survivor Draft HQ</p>
+                <h2 id="loginTitle">The cleanest way to run your Survivor fantasy league</h2>
+                <p className="landing-tagline">
+                  Build leagues in minutes, run a live draft room, manage teams, and keep everyone synced on every pick.
+                </p>
+                <div className="landing-highlights">
+                  <span>Live draft tracking</span>
+                  <span>League invite codes</span>
+                  <span>Cross-device team views</span>
+                </div>
+              </section>
+
+              <section className="landing-auth-shell card">
+                <h3>Welcome Back</h3>
+                <p className="muted">Sign in or create an account to enter your league.</p>
+                <div className="landing-options">
+                  <button id="landingLoginOption" type="button" className="active-mode">
+                    Login
+                  </button>
+                  <button id="landingCreateOption" type="button" className="secondary">
+                    Create Account
+                  </button>
+                </div>
+                <form id="authForm" className="form-grid landing-auth-form">
+                  <label>
+                    Username
+                    <input id="authUsername" type="text" required placeholder="your-username" />
+                  </label>
+                  <label>
+                    Password
+                    <input id="authPassword" type="password" required placeholder="Enter password" />
+                  </label>
+                  <label id="authDisplayNameField" hidden>
+                    Display Name (for create account)
+                    <input id="authDisplayName" type="text" placeholder="Your name" />
+                  </label>
+                  <div className="button-row">
+                    <button id="authSubmitButton" type="submit">
+                      Login
+                    </button>
+                  </div>
+                </form>
+              </section>
             </div>
           </div>
-          <form id="authForm" className="card form-grid landing-auth-form">
-            <label>
-              Username
-              <input id="authUsername" type="text" required placeholder="your-username" />
-            </label>
-            <label>
-              Password
-              <input id="authPassword" type="password" required placeholder="Enter password" />
-            </label>
-            <label id="authDisplayNameField" hidden>
-              Display Name (for create account)
-              <input id="authDisplayName" type="text" placeholder="Your name" />
-            </label>
-            <div className="button-row">
-              <button id="authSubmitButton" type="submit">
-                Login
-              </button>
-            </div>
-          </form>
           <p id="loginMessage" className="message" />
-          <img className="landing-cast" src="/photos/50cast.png" alt="Survivor 50 cast" />
+          <section className="landing-proof card">
+            <div>
+              <h3>Built for draft night energy</h3>
+              <p className="muted">
+                Keep the room organized with draft order, quick assignments, and clear team views across desktop and mobile.
+              </p>
+            </div>
+            <img className="landing-cast" src="/photos/50cast.png" alt="Survivor 50 cast" />
+          </section>
         </section>
 
         <section id="leaguesView" className="page-view view-hidden" aria-labelledby="leaguesTitle">
