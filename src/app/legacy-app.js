@@ -628,7 +628,6 @@ async function assignPlayer(ctx, playerId, teamIdOrNull) {
 }
 
 async function claimPlayer(ctx, playerId) {
-  if (ctx.membership.role === "admin") throw new Error("Admins should use Assign.");
   const draft = ensureDraftConfig(ctx);
   if (draft.isDraftActive && !myTurn(ctx, draft)) {
     throw new Error("It is not your turn.");
@@ -883,7 +882,7 @@ function openDetails(leagueId, playerId) {
   if (detailsClaimButton) {
     const draft = ensureDraftConfig(ctx);
     const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
-    const showClaim = ctx.membership.role !== "admin" && draft.isDraftActive && !currentTeamId;
+    const showClaim = draft.isDraftActive && !currentTeamId;
     detailsClaimButton.classList.toggle("view-hidden", !showClaim);
     if (showClaim) {
       detailsClaimButton.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
@@ -981,10 +980,26 @@ function playerCard(ctx, p) {
   d.textContent = "Details";
   d.addEventListener("click", () => openDetails(ctx.league.id, p.id));
   const a = document.createElement("button");
+  a.className = "secondary";
   if (ctx.membership.role === "admin") {
+    const draft = ensureDraftConfig(ctx);
     a.textContent = "Assign";
     a.addEventListener("click", () => openAssign(ctx.league.id, p.id));
     a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
+    actions.appendChild(d);
+    actions.appendChild(a);
+
+    if (draft.isDraftActive) {
+      const claimButton = document.createElement("button");
+      claimButton.className = "secondary";
+      claimButton.textContent = "Claim";
+      claimButton.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
+      claimButton.addEventListener("click", async () => {
+        try { await claimPlayer(ctx, p.id); render(); }
+        catch (err) { msg("league", err.message); render(); }
+      });
+      actions.appendChild(claimButton);
+    }
   } else {
     a.textContent = "Claim";
     const draft = ensureDraftConfig(ctx);
@@ -998,9 +1013,9 @@ function playerCard(ctx, p) {
       try { await claimPlayer(ctx, p.id); render(); }
       catch (err) { msg("league", err.message); render(); }
     });
+    actions.appendChild(d);
+    actions.appendChild(a);
   }
-  actions.appendChild(d);
-  actions.appendChild(a);
   card.appendChild(actions);
   return card;
 }
@@ -2065,7 +2080,7 @@ function wire() {
       const r = route();
       if (r.name !== "league" || !state.detailsTargetPlayerId) return;
       const ctx = ctxForLeague(r.leagueId);
-      if (!ctx || ctx.membership.role === "admin") return;
+      if (!ctx) return;
       try {
         await claimPlayer(ctx, state.detailsTargetPlayerId);
         closeDetails();
