@@ -369,7 +369,8 @@ select {
 }
 
 .pool-view-toggle {
-  display: none;
+  display: inline-flex;
+  align-items: center;
   white-space: nowrap;
 }
 
@@ -1209,11 +1210,6 @@ button:hover {
 
   .teams-panel {
     display: none;
-  }
-
-  .pool-view-toggle {
-    display: inline-flex;
-    align-items: center;
   }
 
   #draftLayout .pool-panel {

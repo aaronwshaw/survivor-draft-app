@@ -37,7 +37,7 @@ const state = {
   showTurnPreview: false,
   draftFilter: "alpha",
   tribeFilter: "all",
-  playerPoolShowPhotos: false,
+  playerPoolShowPhotos: null,
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null,
   teamsViewTeamId: null,
@@ -1645,6 +1645,9 @@ function renderDraftOrderCard(ctx, draft) {
 function renderLeague(leagueId) {
   const ctx = ctxForLeague(leagueId);
   if (!ctx) { msg("leagues", "League not found or access denied."); go("#/leagues"); return; }
+  if (state.playerPoolShowPhotos == null) {
+    state.playerPoolShowPhotos = !isMobileLayout();
+  }
   const draft = ensureDraftConfig(ctx);
   toggleView("league");
   ui.leagueTitle.textContent = ctx.league.name;
