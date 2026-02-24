@@ -37,6 +37,7 @@ const state = {
   showTurnPreview: false,
   draftFilter: "alpha",
   tribeFilter: "all",
+  playerPoolShowPhotos: false,
   assignTargetPlayerId: null,
   detailsTargetPlayerId: null,
   teamsViewTeamId: null,
@@ -119,6 +120,7 @@ const ui = {
   playersContainer: document.getElementById("playersContainer"),
   draftFilterSelect: document.getElementById("draftFilterSelect"),
   tribeFilterSelect: document.getElementById("tribeFilterSelect"),
+  playerPoolViewToggle: document.getElementById("playerPoolViewToggle"),
   teamColumnsContainer: document.getElementById("teamColumnsContainer"),
   assignModal: document.getElementById("assignModal"),
   assignPlayerName: document.getElementById("assignPlayerName"),
@@ -1693,6 +1695,10 @@ function renderLeague(leagueId) {
     state.tribeFilter = "all";
   }
   ui.tribeFilterSelect.value = state.tribeFilter;
+  if (ui.playerPoolViewToggle) {
+    ui.playerPoolViewToggle.textContent = state.playerPoolShowPhotos ? "Pictures: On" : "Pictures: Off";
+  }
+  ui.playersContainer.className = state.playerPoolShowPhotos ? "players-grid photos-mode" : "players-grid list-mode";
 
   const unassignedPlayers = sortDraftPlayers(
     state.players
@@ -1954,6 +1960,13 @@ function wire() {
     const r = route();
     if (r.name === "league") render();
   });
+  if (ui.playerPoolViewToggle) {
+    ui.playerPoolViewToggle.addEventListener("click", () => {
+      state.playerPoolShowPhotos = !state.playerPoolShowPhotos;
+      const r = route();
+      if (r.name === "league") render();
+    });
+  }
   ui.addTeamButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;

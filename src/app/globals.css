@@ -368,6 +368,11 @@ select {
   flex-wrap: wrap;
 }
 
+.pool-view-toggle {
+  display: none;
+  white-space: nowrap;
+}
+
 .turn-banner {
   border-radius: 10px;
   padding: 0.6rem 0.8rem;
@@ -530,6 +535,31 @@ select {
   display: grid;
   gap: 0.75rem;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.players-grid.list-mode {
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.players-grid.list-mode .photo-wrap {
+  display: none;
+}
+
+.players-grid.list-mode .player-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+}
+
+.players-grid.list-mode .player-card h3 {
+  margin: 0;
+}
+
+.players-grid.list-mode .card-actions {
+  justify-content: flex-end;
 }
 
 @media (min-width: 769px) {
@@ -1179,6 +1209,34 @@ button:hover {
 
   .teams-panel {
     display: none;
+  }
+
+  .pool-view-toggle {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  #draftLayout .pool-panel {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+    max-height: calc(100vh - 130px);
+    overflow: hidden;
+  }
+
+  #draftLayout .pool-panel .panel-head {
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  #draftLayout .pool-panel .players-grid {
+    margin-top: 0;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    align-content: start;
+    padding-right: 0.2rem;
   }
 
   .league-topbar {

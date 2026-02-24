@@ -291,6 +291,9 @@ export default function Home() {
                       <option value="all">All Tribes</option>
                     </select>
                   </label>
+                  <button id="playerPoolViewToggle" type="button" className="secondary pool-view-toggle">
+                    Pictures: Off
+                  </button>
                 </div>
               </div>
               <div id="playersContainer" className="players-grid" />
