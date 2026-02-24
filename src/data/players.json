@@ -8,7 +8,7 @@
     "seasons": [
       {
         "season": "Season 37",
-        "placement": "2nd runner-up",
+        "placement": 3,
         "advantagesFound": 1,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 44.44,
@@ -26,7 +26,7 @@
     "seasons": [
       {
         "season": "Season 32",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 62.5,
@@ -35,7 +35,7 @@
       },
       {
         "season": "Season 34",
-        "placement": "15th voted out",
+        "placement": 5,
         "advantagesFound": 0,
         "daysPlayed": 37,
         "tribalChallengeWinPct": 27.27,
@@ -44,7 +44,7 @@
       },
       {
         "season": "Season 38",
-        "placement": "5th voted out",
+        "placement": 16,
         "advantagesFound": 1,
         "daysPlayed": 13,
         "tribalChallengeWinPct": 71.43,
@@ -62,7 +62,7 @@
     "seasons": [
       {
         "season": "Season 18",
-        "placement": "11th voted out",
+        "placement": 5,
         "advantagesFound": 0,
         "daysPlayed": 36,
         "tribalChallengeWinPct": 50.0,
@@ -71,7 +71,7 @@
       },
       {
         "season": "Season 20",
-        "placement": "9th voted out",
+        "placement": 12,
         "advantagesFound": 0,
         "daysPlayed": 21,
         "tribalChallengeWinPct": 50.0,
@@ -80,7 +80,7 @@
       },
       {
         "season": "Season 23",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 1,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 50.0,
@@ -98,7 +98,7 @@
     "seasons": [
       {
         "season": "Season 46",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 26,
         "tribalChallengeWinPct": 57.14,
@@ -116,7 +116,7 @@
     "seasons": [
       {
         "season": "Season 35",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 40.0,
@@ -134,7 +134,7 @@
     "seasons": [
       {
         "season": "Season 37",
-        "placement": "12th voted out",
+        "placement": 7,
         "advantagesFound": 1,
         "daysPlayed": 35,
         "tribalChallengeWinPct": 55.56,
@@ -152,7 +152,7 @@
     "seasons": [
       {
         "season": "Season 12",
-        "placement": "12th voted out",
+        "placement": 4,
         "advantagesFound": 0,
         "daysPlayed": 36,
         "tribalChallengeWinPct": 54.55,
@@ -161,7 +161,7 @@
       },
       {
         "season": "Season 16",
-        "placement": "15th voted out",
+        "placement": 3,
         "advantagesFound": 0,
         "daysPlayed": 38,
         "tribalChallengeWinPct": 38.46,
@@ -170,7 +170,7 @@
       },
       {
         "season": "Season 20",
-        "placement": "4th voted out",
+        "placement": 17,
         "advantagesFound": 0,
         "daysPlayed": 11,
         "tribalChallengeWinPct": 33.33,
@@ -179,7 +179,7 @@
       },
       {
         "season": "Season 34",
-        "placement": "Eliminated",
+        "placement": 6,
         "advantagesFound": 0,
         "daysPlayed": 36,
         "tribalChallengeWinPct": 63.64,
@@ -197,7 +197,7 @@
     "seasons": [
       {
         "season": "Season 2",
-        "placement": "Runner-up",
+        "placement": 12,
         "advantagesFound": 0,
         "daysPlayed": 42,
         "tribalChallengeWinPct": 40.0,
@@ -206,7 +206,7 @@
       },
       {
         "season": "Season 8",
-        "placement": "5th voted out",
+        "placement": 19,
         "advantagesFound": 0,
         "daysPlayed": 19,
         "tribalChallengeWinPct": 60.0,
@@ -215,7 +215,7 @@
       },
       {
         "season": "Season 20",
-        "placement": "16th voted out",
+        "placement": 5,
         "advantagesFound": 0,
         "daysPlayed": 37,
         "tribalChallengeWinPct": 50.0,
@@ -233,7 +233,7 @@
     "seasons": [
       {
         "season": "Season 45",
-        "placement": "Sole Survivor",
+        "placement": 1,
         "advantagesFound": 0,
         "daysPlayed": 26,
         "tribalChallengeWinPct": 85.71,
@@ -251,7 +251,7 @@
     "seasons": [
       {
         "season": "Season 45",
-        "placement": "11th voted out",
+        "placement": 7,
         "advantagesFound": 0,
         "daysPlayed": 21,
         "tribalChallengeWinPct": 28.57,
@@ -269,7 +269,7 @@
     "seasons": [
       {
         "season": "Season 47",
-        "placement": "14th voted out",
+        "placement": 5,
         "advantagesFound": 1,
         "daysPlayed": 24,
         "tribalChallengeWinPct": 50.0,
@@ -287,7 +287,7 @@
     "seasons": [
       {
         "season": "Season 1",
-        "placement": "9th voted out",
+        "placement": 18,
         "advantagesFound": 0,
         "daysPlayed": 27,
         "tribalChallengeWinPct": 54.55,
@@ -296,7 +296,7 @@
       },
       {
         "season": "Season 8",
-        "placement": "14th voted out",
+        "placement": 10,
         "advantagesFound": 0,
         "daysPlayed": 38,
         "tribalChallengeWinPct": 61.54,
@@ -314,7 +314,7 @@
     "seasons": [
       {
         "season": "Season 48",
-        "placement": "2nd runner-up",
+        "placement": 3,
         "advantagesFound": 0,
         "daysPlayed": 26,
         "tribalChallengeWinPct": 85.71,
@@ -332,7 +332,7 @@
     "seasons": [
       {
         "season": "Season 42",
-        "placement": "Lost final 4 fire challenge",
+        "placement": 4,
         "advantagesFound": 0,
         "daysPlayed": 25,
         "tribalChallengeWinPct": 71.43,
@@ -350,7 +350,7 @@
     "seasons": [
       {
         "season": "Season 48",
-        "placement": "Eliminated",
+        "placement": 4,
         "advantagesFound": 1,
         "daysPlayed": 25,
         "tribalChallengeWinPct": 71.43,
@@ -368,7 +368,7 @@
     "seasons": [
       {
         "season": "Season 13",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 71.43,
@@ -377,7 +377,7 @@
       },
       {
         "season": "Season 16",
-        "placement": "10th voted out",
+        "placement": 9,
         "advantagesFound": 1,
         "daysPlayed": 27,
         "tribalChallengeWinPct": 38.46,
@@ -386,7 +386,7 @@
       },
       {
         "season": "Season 23",
-        "placement": "17th voted out",
+        "placement": 4,
         "advantagesFound": 1,
         "daysPlayed": 38,
         "tribalChallengeWinPct": 50.0,
@@ -395,7 +395,7 @@
       },
       {
         "season": "Season 34",
-        "placement": "9th voted out",
+        "placement": 12,
         "advantagesFound": 0,
         "daysPlayed": 24,
         "tribalChallengeWinPct": 72.73,
@@ -413,8 +413,8 @@
     "seasons": [
       {
         "season": "Season 48",
-        "placement": "Sole Survivor",
-        "advantagesFound": 1,
+        "placement": 1,
+        "advantagesFound": 2,
         "daysPlayed": 26,
         "tribalChallengeWinPct": 62.5,
         "individualImmunityWins": 2,
@@ -431,7 +431,7 @@
     "seasons": [
       {
         "season": "Season 37",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 44.44,
@@ -449,7 +449,7 @@
     "seasons": [
       {
         "season": "Season 46",
-        "placement": "12th voted out",
+        "placement": 6,
         "advantagesFound": 1,
         "daysPlayed": 23,
         "tribalChallengeWinPct": 28.57,
@@ -467,7 +467,7 @@
     "seasons": [
       {
         "season": "Season 38",
-        "placement": "Lost final 4 fire challenge",
+        "placement": 4,
         "advantagesFound": 5,
         "daysPlayed": 38,
         "tribalChallengeWinPct": 20.0,
@@ -485,8 +485,8 @@
     "seasons": [
       {
         "season": "Season 49",
-        "placement": "Lost final 4 fire challenge",
-        "advantagesFound": 1,
+        "placement": 4,
+        "advantagesFound": 2,
         "daysPlayed": 25,
         "tribalChallengeWinPct": 55.56,
         "individualImmunityWins": 0,
@@ -503,7 +503,7 @@
     "seasons": [
       {
         "season": "Season 49",
-        "placement": "Sole Survivor",
+        "placement": 1,
         "advantagesFound": 1,
         "daysPlayed": 16,
         "tribalChallengeWinPct": 50.0,
@@ -521,7 +521,7 @@
     "seasons": [
       {
         "season": "Season 10",
-        "placement": "10th voted out",
+        "placement": 11,
         "advantagesFound": 0,
         "daysPlayed": 30,
         "tribalChallengeWinPct": 21.43,
@@ -530,7 +530,7 @@
       },
       {
         "season": "Season 11",
-        "placement": "Runner-up",
+        "placement": 2,
         "advantagesFound": 0,
         "daysPlayed": 39,
         "tribalChallengeWinPct": 33.33,
@@ -539,7 +539,7 @@
       },
       {
         "season": "Season 20",
-        "placement": "2nd voted out",
+        "placement": 19,
         "advantagesFound": 0,
         "daysPlayed": 6,
         "tribalChallengeWinPct": 33.33,
@@ -557,8 +557,8 @@
     "seasons": [
       {
         "season": "Season 46",
-        "placement": "10th voted out",
-        "advantagesFound": 1,
+        "placement": 8,
+        "advantagesFound": 2,
         "daysPlayed": 19,
         "tribalChallengeWinPct": 28.57,
         "individualImmunityWins": 0,

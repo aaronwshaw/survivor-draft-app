@@ -5,7 +5,13 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 function normalizePlacement(placement) {
-  return String(placement || "").trim().toLowerCase();
+  if (placement == null) return null;
+  if (typeof placement === "number" && Number.isFinite(placement)) return placement;
+  const text = String(placement || "").trim();
+  if (!text) return null;
+  const asNumber = Number(text);
+  if (Number.isFinite(asNumber)) return asNumber;
+  return text.toLowerCase();
 }
 
 function normalizeName(name) {
@@ -29,6 +35,11 @@ function computeStats(seasons) {
   for (const season of list) {
     const placement = normalizePlacement(season && season.placement);
     if (!placement) continue;
+    if (typeof placement === "number") {
+      if (placement === 1) winnerCount += 1;
+      if (placement > 1 && placement <= 3) finalistCount += 1;
+      continue;
+    }
     if (placement.includes("winner") || placement.includes("won")) winnerCount += 1;
     if (placement.includes("runner-up") || placement.includes("finalist")) finalistCount += 1;
   }
@@ -98,7 +109,7 @@ async function main() {
             typeof season === "number" ? season : parseSeasonNumber(season && season.season),
           placement:
             season && typeof season === "object" && "placement" in season
-              ? (season.placement == null ? null : String(season.placement))
+              ? (season.placement == null ? null : Number(season.placement))
               : null,
           advantagesFound:
             season && typeof season === "object" && "advantagesFound" in season

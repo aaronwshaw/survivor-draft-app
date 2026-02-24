@@ -121,7 +121,7 @@ model PlayerSeason {
   playerId     String
   seasonLabel  String
   seasonNumber Int?
-  placement    String?
+  placement    Int?
   advantagesFound        Int?
   daysPlayed             Int?
   tribalChallengeWinPct  Float?
