@@ -783,10 +783,14 @@ function closeAssign() {
   ui.assignModal.classList.add("hidden");
 }
 
+function canManageSurvivor(ctx) {
+  return !!(ctx?.user?.isOwner && route().name === "league" && state.currentSubview === "survivor");
+}
+
 function updateEliminateButton(ctx, playerId) {
   const player = state.players.find((entry) => entry.id === playerId);
   const n = Number(player?.eliminated) || 0;
-  const canManage = !!(ctx.user?.isOwner && state.currentSubview === "survivor");
+  const canManage = canManageSurvivor(ctx);
   if (!canManage) {
     ui.detailsEliminateButton.classList.add("view-hidden");
     return;
@@ -818,7 +822,7 @@ function openDetails(leagueId, playerId) {
     });
   }
   const tribe = tribeForId(p.tribe);
-  const canManage = !!(ctx.user?.isOwner && state.currentSubview === "survivor");
+  const canManage = canManageSurvivor(ctx);
   state.detailsTargetPlayerId = playerId;
   ui.detailsPhoto.src = p.photoUrl;
   ui.detailsPhoto.alt = p.name;
@@ -2044,7 +2048,7 @@ function wire() {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
-    if (!ctx || !ctx.user.isOwner || state.currentSubview !== "survivor") return;
+    if (!canManageSurvivor(ctx) || !state.detailsTargetPlayerId) return;
     try {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       if (!player) return;
@@ -2083,7 +2087,7 @@ function wire() {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
     const ctx = ctxForLeague(r.leagueId);
-    if (!ctx || !ctx.user.isOwner || state.currentSubview !== "survivor") return;
+    if (!canManageSurvivor(ctx)) return;
     const selectedTribeId = ui.tribeSelect.value || "";
     try {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);

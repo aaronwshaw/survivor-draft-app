@@ -356,7 +356,7 @@ export default function Home() {
               <button id="detailsClaimButton" type="button" className="view-hidden">
                 Claim
               </button>
-              <button id="detailsEliminateButton" type="button" className="danger-button">
+              <button id="detailsEliminateButton" type="button" className="danger-button view-hidden">
                 Eliminated
               </button>
             </div>
