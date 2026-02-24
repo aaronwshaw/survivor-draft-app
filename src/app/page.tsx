@@ -282,6 +282,7 @@ export default function Home() {
                       <option value="alpha">Alphabetical</option>
                       <option value="season">First Season</option>
                       <option value="placement">Highest Placement</option>
+                      <option value="immunity">Individual Immunities</option>
                     </select>
                   </label>
                   <label className="inline-filter" htmlFor="tribeFilterSelect">

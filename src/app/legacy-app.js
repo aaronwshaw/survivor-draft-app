@@ -1283,6 +1283,15 @@ function bestPlacementNumber(player) {
   return Math.min(...placements);
 }
 
+function totalIndividualImmunityWins(player) {
+  const seasons = normalizeSeasons(player.seasons);
+  return seasons.reduce((sum, entry) => {
+    if (!entry || typeof entry !== "object") return sum;
+    const n = Number(entry.individualImmunityWins);
+    return sum + (Number.isFinite(n) ? n : 0);
+  }, 0);
+}
+
 function sortDraftPlayers(players) {
   const sorted = [...players];
   if (state.draftFilter === "season") {
@@ -1299,6 +1308,15 @@ function sortDraftPlayers(players) {
       const aPlacement = bestPlacementNumber(a);
       const bPlacement = bestPlacementNumber(b);
       if (aPlacement !== bPlacement) return aPlacement - bPlacement;
+      return a.name.localeCompare(b.name);
+    });
+    return sorted;
+  }
+  if (state.draftFilter === "immunity") {
+    sorted.sort((a, b) => {
+      const aWins = totalIndividualImmunityWins(a);
+      const bWins = totalIndividualImmunityWins(b);
+      if (aWins !== bWins) return bWins - aWins;
       return a.name.localeCompare(b.name);
     });
     return sorted;
@@ -1926,7 +1944,8 @@ function wire() {
   });
   ui.draftFilterSelect.addEventListener("change", () => {
     const next = ui.draftFilterSelect.value;
-    state.draftFilter = next === "season" || next === "placement" ? next : "alpha";
+    state.draftFilter =
+      next === "season" || next === "placement" || next === "immunity" ? next : "alpha";
     const r = route();
     if (r.name === "league") render();
   });
