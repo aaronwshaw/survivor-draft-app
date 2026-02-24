@@ -359,8 +359,32 @@ export default function Home() {
           <p>
             <strong>Tribe:</strong> <span id="detailsTribe" />
           </p>
-          <h4>Seasons</h4>
-          <ul id="detailsSeasons" />
+          <h4>Season Stats</h4>
+          <table className="details-season-table">
+            <thead>
+              <tr>
+                <th>Season</th>
+                <th>Placement</th>
+                <th>Ind Immunities</th>
+                <th>Tribal Win %</th>
+              </tr>
+            </thead>
+            <tbody id="detailsSeasonStatsBody" />
+          </table>
+          <h4>Overall Stats</h4>
+          <table className="details-overall-table">
+            <thead>
+              <tr>
+                <th>Days Played</th>
+                <th>Advantages Found</th>
+                <th>Total Ind Immunities</th>
+                <th>Total Ind Rewards</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr id="detailsOverallStatsRow" />
+            </tbody>
+          </table>
           <div className="modal-actions">
             <button id="detailsCloseBottom" type="button" className="secondary">
               Close

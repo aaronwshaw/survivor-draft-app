@@ -130,7 +130,8 @@ const ui = {
   detailsName: document.getElementById("detailsName"),
   detailsAge: document.getElementById("detailsAge"),
   detailsTribe: document.getElementById("detailsTribe"),
-  detailsSeasons: document.getElementById("detailsSeasons"),
+  detailsSeasonStatsBody: document.getElementById("detailsSeasonStatsBody"),
+  detailsOverallStatsRow: document.getElementById("detailsOverallStatsRow"),
   tribeAssignSection: document.getElementById("tribeAssignSection"),
   tribeAssignToggle: document.getElementById("tribeAssignToggle"),
   tribeAssignPanel: document.getElementById("tribeAssignPanel"),
@@ -394,6 +395,11 @@ function normalizeSeasons(rawSeasons) {
     return Array.isArray(values) ? values : [];
   }
   return [];
+}
+
+function toNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
 async function signUp(rawUsername, rawPassword, displayName) {
@@ -797,6 +803,16 @@ function openDetails(leagueId, playerId) {
   const ctx = ctxForLeague(leagueId);
   const p = state.players.find((x) => x.id === playerId);
   if (!ctx || !p) return;
+  const seasonStatsBody = ui.detailsSeasonStatsBody || document.getElementById("detailsSeasonStatsBody");
+  const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
+  if (!seasonStatsBody || !overallStatsRow) return;
+  const overallTable = overallStatsRow.closest("table");
+  if (overallTable) {
+    const overallHeaderCells = overallTable.querySelectorAll("thead th");
+    overallHeaderCells.forEach((cell, idx) => {
+      if (idx >= 4) cell.remove();
+    });
+  }
   const tribe = tribeForId(p.tribe);
   const canManage = !!(ctx.user?.isOwner && state.currentSubview === "survivor");
   state.detailsTargetPlayerId = playerId;
@@ -806,17 +822,54 @@ function openDetails(leagueId, playerId) {
   ui.detailsAge.textContent = p.age ?? "Unknown";
   ui.detailsTribe.textContent = tribe?.name || "Unknown";
   applyTribeBorder(ui.detailsPhoto, tribe);
-  ui.detailsSeasons.innerHTML = "";
-  normalizeSeasons(p.seasons).forEach((s) => {
-    const li = document.createElement("li");
-    li.textContent = typeof s === "number" ? `Season ${s}` : (s.placement ? `${s.season} (${s.placement})` : s.season);
-    ui.detailsSeasons.appendChild(li);
+  seasonStatsBody.innerHTML = "";
+  overallStatsRow.innerHTML = "";
+  const seasons = normalizeSeasons(p.seasons);
+  let totalDaysPlayed = 0;
+  let totalAdvantagesFound = 0;
+  let totalIndividualImmunityWins = 0;
+  let totalIndividualRewardWins = 0;
+
+  seasons.forEach((s) => {
+    const seasonLabel = typeof s === "number" ? `Season ${s}` : String(s?.season || "Unknown");
+    const placement = typeof s === "object" && s ? s.placement : null;
+    const individualImmunityWins = toNumber(s?.individualImmunityWins);
+    const daysPlayed = toNumber(s?.daysPlayed);
+    const advantagesFound = toNumber(s?.advantagesFound);
+    const individualRewardWins = toNumber(s?.individualRewardWins);
+    const tribalWinPct = Number(s?.tribalChallengeWinPct);
+
+    totalDaysPlayed += daysPlayed;
+    totalAdvantagesFound += advantagesFound;
+    totalIndividualImmunityWins += individualImmunityWins;
+    totalIndividualRewardWins += individualRewardWins;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${seasonLabel}</td>
+      <td>${placement ?? "-"}</td>
+      <td>${individualImmunityWins}</td>
+      <td>${Number.isFinite(tribalWinPct) ? tribalWinPct.toFixed(2) : "0.00"}%</td>
+    `;
+    seasonStatsBody.appendChild(tr);
   });
-  if (!ui.detailsSeasons.children.length) {
-    const li = document.createElement("li");
-    li.textContent = "No season data available yet.";
-    ui.detailsSeasons.appendChild(li);
+
+  if (!seasonStatsBody.children.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="4">No season data available yet.</td>`;
+    seasonStatsBody.appendChild(tr);
   }
+
+  const overallValues = [
+    String(totalDaysPlayed),
+    String(totalAdvantagesFound),
+    String(totalIndividualImmunityWins),
+    String(totalIndividualRewardWins),
+  ];
+  overallValues.forEach((value) => {
+    const td = document.createElement("td");
+    td.textContent = value;
+    overallStatsRow.appendChild(td);
+  });
   ui.tribeAssignSection.classList.toggle("view-hidden", !canManage);
   ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
   if (canManage) {

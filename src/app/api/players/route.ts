@@ -42,6 +42,11 @@ export async function GET() {
         select: {
           seasonLabel: true,
           placement: true,
+          advantagesFound: true,
+          daysPlayed: true,
+          tribalChallengeWinPct: true,
+          individualImmunityWins: true,
+          individualRewardWins: true,
         },
       },
     },
@@ -53,6 +58,11 @@ export async function GET() {
           .map((row) => ({
             season: row.seasonLabel,
             placement: row.placement ?? null,
+            advantagesFound: row.advantagesFound ?? 0,
+            daysPlayed: row.daysPlayed ?? null,
+            tribalChallengeWinPct: row.tribalChallengeWinPct ?? 0,
+            individualImmunityWins: row.individualImmunityWins ?? 0,
+            individualRewardWins: row.individualRewardWins ?? 0,
           }))
           .filter((row) => row.season)
       : [];
