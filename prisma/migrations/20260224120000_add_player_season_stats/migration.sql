@@ -1,0 +1,6 @@
+ALTER TABLE "PlayerSeason"
+ADD COLUMN "advantagesFound" INTEGER,
+ADD COLUMN "daysPlayed" INTEGER,
+ADD COLUMN "tribalChallengeWinPct" DOUBLE PRECISION,
+ADD COLUMN "individualImmunityWins" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "individualRewardWins" INTEGER NOT NULL DEFAULT 0;

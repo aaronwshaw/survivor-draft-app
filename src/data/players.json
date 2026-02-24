@@ -1,374 +1,569 @@
 [
-    {
-        "id":  "angelina-keeley",
-        "name":  "Angelina Keeley",
-        "photoUrl":  "photos/Angelina.webp",
-        "age":  35,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 37",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "aubry-bracco",
-        "name":  "Aubry Bracco",
-        "photoUrl":  "photos/Aubry.webp",
-        "age":  39,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 32",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 34",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 38",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "benjamin-coach-wade",
-        "name":  "Benjamin \"Coach\" Wade",
-        "photoUrl":  "photos/Coach.webp",
-        "age":  53,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 18",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 20",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 23",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "charlie-davis",
-        "name":  "Charlie Davis",
-        "photoUrl":  "photos/Charlie.webp",
-        "age":  27,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 46",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "chrissy-hofbeck",
-        "name":  "Chrissy Hofbeck",
-        "photoUrl":  "photos/Chrissy.webp",
-        "age":  54,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 35",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "christian-hubicki",
-        "name":  "Christian Hubicki",
-        "photoUrl":  "photos/Christian.webp",
-        "age":  39,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 37",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "cirie-fields",
-        "name":  "Cirie Fields",
-        "photoUrl":  "photos/Cirie.webp",
-        "age":  54,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 12",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 16",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 20",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 34",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "colby-donaldson",
-        "name":  "Colby Donaldson",
-        "photoUrl":  "photos/Colby.webp",
-        "age":  51,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 2",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 8",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 20",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "dee-valladares",
-        "name":  "Dee Valladares",
-        "photoUrl":  "photos/Dee.webp",
-        "age":  28,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 45",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "emily-flippen",
-        "name":  "Emily Flippen",
-        "photoUrl":  "photos/Emily.webp",
-        "age":  30,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 45",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "genevieve-mushaluk",
-        "name":  "Genevieve Mushaluk",
-        "photoUrl":  "photos/Genevieve.webp",
-        "age":  34,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 47",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "jenna-lewis-dougherty",
-        "name":  "Jenna Lewis-Dougherty",
-        "photoUrl":  "photos/Jenna.webp",
-        "age":  47,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 1",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 8",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "joe-hunter",
-        "name":  "Joe Hunter",
-        "photoUrl":  "photos/Joe.webp",
-        "age":  45,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 48",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "jonathan-young",
-        "name":  "Jonathan Young",
-        "photoUrl":  "photos/Jonathan.webp",
-        "age":  32,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 42",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "kamilla-karthigesu",
-        "name":  "Kamilla Karthigesu",
-        "photoUrl":  "photos/Kamilla.webp",
-        "age":  31,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 48",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "ozzy-lusth",
-        "name":  "Ozzy Lusth",
-        "photoUrl":  "photos/Ozzy.webp",
-        "age":  43,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 13",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 16",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 23",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 34",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "kyle-fraser",
-        "name":  "Kyle Fraser",
-        "photoUrl":  "photos/Kyle.webp",
-        "age":  31,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 48",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "mike-white",
-        "name":  "Mike White",
-        "photoUrl":  "photos/Mike.webp",
-        "age":  54,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 37",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "quintavius-q-burdette",
-        "name":  "Quintavius \"Q\" Burdette",
-        "photoUrl":  "photos/Q.webp",
-        "age":  31,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 46",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "rick-devens",
-        "name":  "Rick Devens",
-        "photoUrl":  "photos/Rick.webp",
-        "age":  41,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 38",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "rizo-velovic",
-        "name":  "Rizo Velovic",
-        "photoUrl":  "photos/Rizo.webp",
-        "age":  25,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 49",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "savannah-louie",
-        "name":  "Savannah Louie",
-        "photoUrl":  "photos/Savannah.webp",
-        "age":  31,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 49",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "stephenie-lagrossa-kendrick",
-        "name":  "Stephenie LaGrossa Kendrick",
-        "photoUrl":  "photos/Stephenie.webp",
-        "age":  45,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 10",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 11",
-                            "placement":  null
-                        },
-                        {
-                            "season":  "Season 20",
-                            "placement":  null
-                        }
-                    ]
-    },
-    {
-        "id":  "tiffany-nicole-ervin",
-        "name":  "Tiffany Nicole Ervin",
-        "photoUrl":  "photos/Tiffany.webp",
-        "age":  34,
-        "tribe":  null,
-        "seasons":  [
-                        {
-                            "season":  "Season 46",
-                            "placement":  null
-                        }
-                    ]
-    }
+  {
+    "id": "angelina-keeley",
+    "name": "Angelina Keeley",
+    "photoUrl": "photos/Angelina.webp",
+    "age": 35,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 37",
+        "placement": "2nd runner-up",
+        "advantagesFound": 1,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 44.44,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "aubry-bracco",
+    "name": "Aubry Bracco",
+    "photoUrl": "photos/Aubry.webp",
+    "age": 39,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 32",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 62.5,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 1
+      },
+      {
+        "season": "Season 34",
+        "placement": "15th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 37,
+        "tribalChallengeWinPct": 27.27,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 38",
+        "placement": "5th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 13,
+        "tribalChallengeWinPct": 71.43,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "benjamin-coach-wade",
+    "name": "Benjamin \"Coach\" Wade",
+    "photoUrl": "photos/Coach.webp",
+    "age": 53,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 18",
+        "placement": "11th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 36,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 20",
+        "placement": "9th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 21,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 23",
+        "placement": "Runner-up",
+        "advantagesFound": 1,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "charlie-davis",
+    "name": "Charlie Davis",
+    "photoUrl": "photos/Charlie.webp",
+    "age": 27,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 46",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 26,
+        "tribalChallengeWinPct": 57.14,
+        "individualImmunityWins": 2,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "chrissy-hofbeck",
+    "name": "Chrissy Hofbeck",
+    "photoUrl": "photos/Chrissy.webp",
+    "age": 54,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 35",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 40.0,
+        "individualImmunityWins": 4,
+        "individualRewardWins": 2
+      }
+    ]
+  },
+  {
+    "id": "christian-hubicki",
+    "name": "Christian Hubicki",
+    "photoUrl": "photos/Christian.webp",
+    "age": 39,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 37",
+        "placement": "12th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 35,
+        "tribalChallengeWinPct": 55.56,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "cirie-fields",
+    "name": "Cirie Fields",
+    "photoUrl": "photos/Cirie.webp",
+    "age": 54,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 12",
+        "placement": "12th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 36,
+        "tribalChallengeWinPct": 54.55,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 1
+      },
+      {
+        "season": "Season 16",
+        "placement": "15th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 38,
+        "tribalChallengeWinPct": 38.46,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 20",
+        "placement": "4th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 11,
+        "tribalChallengeWinPct": 33.33,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 34",
+        "placement": "Eliminated",
+        "advantagesFound": 0,
+        "daysPlayed": 36,
+        "tribalChallengeWinPct": 63.64,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "colby-donaldson",
+    "name": "Colby Donaldson",
+    "photoUrl": "photos/Colby.webp",
+    "age": 51,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 2",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 42,
+        "tribalChallengeWinPct": 40.0,
+        "individualImmunityWins": 5,
+        "individualRewardWins": 2
+      },
+      {
+        "season": "Season 8",
+        "placement": "5th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 19,
+        "tribalChallengeWinPct": 60.0,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 20",
+        "placement": "16th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 37,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "dee-valladares",
+    "name": "Dee Valladares",
+    "photoUrl": "photos/Dee.webp",
+    "age": 28,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 45",
+        "placement": "Sole Survivor",
+        "advantagesFound": 0,
+        "daysPlayed": 26,
+        "tribalChallengeWinPct": 85.71,
+        "individualImmunityWins": 2,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "emily-flippen",
+    "name": "Emily Flippen",
+    "photoUrl": "photos/Emily.webp",
+    "age": 30,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 45",
+        "placement": "11th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 21,
+        "tribalChallengeWinPct": 28.57,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "genevieve-mushaluk",
+    "name": "Genevieve Mushaluk",
+    "photoUrl": "photos/Genevieve.webp",
+    "age": 34,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 47",
+        "placement": "14th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 24,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "jenna-lewis-dougherty",
+    "name": "Jenna Lewis-Dougherty",
+    "photoUrl": "photos/Jenna.webp",
+    "age": 47,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 1",
+        "placement": "9th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 27,
+        "tribalChallengeWinPct": 54.55,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 8",
+        "placement": "14th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 38,
+        "tribalChallengeWinPct": 61.54,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "joe-hunter",
+    "name": "Joe Hunter",
+    "photoUrl": "photos/Joe.webp",
+    "age": 45,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 48",
+        "placement": "2nd runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 26,
+        "tribalChallengeWinPct": 85.71,
+        "individualImmunityWins": 3,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "jonathan-young",
+    "name": "Jonathan Young",
+    "photoUrl": "photos/Jonathan.webp",
+    "age": 32,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 42",
+        "placement": "Lost final 4 fire challenge",
+        "advantagesFound": 0,
+        "daysPlayed": 25,
+        "tribalChallengeWinPct": 71.43,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "kamilla-karthigesu",
+    "name": "Kamilla Karthigesu",
+    "photoUrl": "photos/Kamilla.webp",
+    "age": 31,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 48",
+        "placement": "Eliminated",
+        "advantagesFound": 1,
+        "daysPlayed": 25,
+        "tribalChallengeWinPct": 71.43,
+        "individualImmunityWins": 2,
+        "individualRewardWins": 2
+      }
+    ]
+  },
+  {
+    "id": "ozzy-lusth",
+    "name": "Ozzy Lusth",
+    "photoUrl": "photos/Ozzy.webp",
+    "age": 43,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 13",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 71.43,
+        "individualImmunityWins": 5,
+        "individualRewardWins": 1
+      },
+      {
+        "season": "Season 16",
+        "placement": "10th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 27,
+        "tribalChallengeWinPct": 38.46,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 23",
+        "placement": "17th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 38,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 34",
+        "placement": "9th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 24,
+        "tribalChallengeWinPct": 72.73,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "kyle-fraser",
+    "name": "Kyle Fraser",
+    "photoUrl": "photos/Kyle.webp",
+    "age": 31,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 48",
+        "placement": "Sole Survivor",
+        "advantagesFound": 1,
+        "daysPlayed": 26,
+        "tribalChallengeWinPct": 62.5,
+        "individualImmunityWins": 2,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "mike-white",
+    "name": "Mike White",
+    "photoUrl": "photos/Mike.webp",
+    "age": 54,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 37",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 44.44,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "quintavius-q-burdette",
+    "name": "Quintavius \"Q\" Burdette",
+    "photoUrl": "photos/Q.webp",
+    "age": 31,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 46",
+        "placement": "12th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 23,
+        "tribalChallengeWinPct": 28.57,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 1
+      }
+    ]
+  },
+  {
+    "id": "rick-devens",
+    "name": "Rick Devens",
+    "photoUrl": "photos/Rick.webp",
+    "age": 41,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 38",
+        "placement": "Lost final 4 fire challenge",
+        "advantagesFound": 5,
+        "daysPlayed": 38,
+        "tribalChallengeWinPct": 20.0,
+        "individualImmunityWins": 4,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "rizo-velovic",
+    "name": "Rizo Velovic",
+    "photoUrl": "photos/Rizo.webp",
+    "age": 25,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 49",
+        "placement": "Lost final 4 fire challenge",
+        "advantagesFound": 1,
+        "daysPlayed": 25,
+        "tribalChallengeWinPct": 55.56,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "savannah-louie",
+    "name": "Savannah Louie",
+    "photoUrl": "photos/Savannah.webp",
+    "age": 31,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 49",
+        "placement": "Sole Survivor",
+        "advantagesFound": 1,
+        "daysPlayed": 16,
+        "tribalChallengeWinPct": 50.0,
+        "individualImmunityWins": 3,
+        "individualRewardWins": 2
+      }
+    ]
+  },
+  {
+    "id": "stephenie-lagrossa-kendrick",
+    "name": "Stephenie LaGrossa Kendrick",
+    "photoUrl": "photos/Stephenie.webp",
+    "age": 45,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 10",
+        "placement": "10th voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 30,
+        "tribalChallengeWinPct": 21.43,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 11",
+        "placement": "Runner-up",
+        "advantagesFound": 0,
+        "daysPlayed": 39,
+        "tribalChallengeWinPct": 33.33,
+        "individualImmunityWins": 1,
+        "individualRewardWins": 0
+      },
+      {
+        "season": "Season 20",
+        "placement": "2nd voted out",
+        "advantagesFound": 0,
+        "daysPlayed": 6,
+        "tribalChallengeWinPct": 33.33,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  },
+  {
+    "id": "tiffany-nicole-ervin",
+    "name": "Tiffany Nicole Ervin",
+    "photoUrl": "photos/Tiffany.webp",
+    "age": 34,
+    "tribe": null,
+    "seasons": [
+      {
+        "season": "Season 46",
+        "placement": "10th voted out",
+        "advantagesFound": 1,
+        "daysPlayed": 19,
+        "tribalChallengeWinPct": 28.57,
+        "individualImmunityWins": 0,
+        "individualRewardWins": 0
+      }
+    ]
+  }
 ]

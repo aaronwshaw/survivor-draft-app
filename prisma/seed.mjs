@@ -100,6 +100,26 @@ async function main() {
             season && typeof season === "object" && "placement" in season
               ? (season.placement == null ? null : String(season.placement))
               : null,
+          advantagesFound:
+            season && typeof season === "object" && "advantagesFound" in season
+              ? (season.advantagesFound == null ? null : Number(season.advantagesFound))
+              : null,
+          daysPlayed:
+            season && typeof season === "object" && "daysPlayed" in season
+              ? (season.daysPlayed == null ? null : Number(season.daysPlayed))
+              : null,
+          tribalChallengeWinPct:
+            season && typeof season === "object" && "tribalChallengeWinPct" in season
+              ? (season.tribalChallengeWinPct == null ? null : Number(season.tribalChallengeWinPct))
+              : null,
+          individualImmunityWins:
+            season && typeof season === "object" && "individualImmunityWins" in season
+              ? (season.individualImmunityWins == null ? 0 : Number(season.individualImmunityWins))
+              : 0,
+          individualRewardWins:
+            season && typeof season === "object" && "individualRewardWins" in season
+              ? (season.individualRewardWins == null ? 0 : Number(season.individualRewardWins))
+              : 0,
         })),
       });
     }

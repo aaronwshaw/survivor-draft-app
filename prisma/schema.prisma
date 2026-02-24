@@ -122,6 +122,11 @@ model PlayerSeason {
   seasonLabel  String
   seasonNumber Int?
   placement    String?
+  advantagesFound        Int?
+  daysPlayed             Int?
+  tribalChallengeWinPct  Float?
+  individualImmunityWins Int      @default(0)
+  individualRewardWins   Int      @default(0)
   createdAt    DateTime @default(now())
 
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
