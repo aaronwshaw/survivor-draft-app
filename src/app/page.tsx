@@ -281,6 +281,7 @@ export default function Home() {
                     <select id="draftFilterSelect">
                       <option value="alpha">Alphabetical</option>
                       <option value="season">First Season</option>
+                      <option value="placement">Highest Placement</option>
                     </select>
                   </label>
                   <label className="inline-filter" htmlFor="tribeFilterSelect">
