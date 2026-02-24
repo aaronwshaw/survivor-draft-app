@@ -937,12 +937,12 @@ function teamCard(ctx, team) {
     const li = document.createElement("li");
     li.className = "roster-item";
     li.innerHTML = `<span>${p.name}</span>`;
-    const canEdit = canUnassignPlayer(ctx.user, ctx.membership, team);
+    const canEdit = ctx.membership.role === "admin";
     if (canEdit) {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "secondary";
-      b.textContent = ctx.membership.role === "admin" ? "Unassign" : "Unclaim";
+      b.textContent = "Unassign";
       b.addEventListener("click", async () => {
         try { await assignPlayer(ctx, p.id, null); render(); }
         catch (err) { msg("league", err.message); render(); }
