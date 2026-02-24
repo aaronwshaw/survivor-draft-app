@@ -141,6 +141,7 @@ const ui = {
   newTribeName: document.getElementById("newTribeName"),
   tribeColorSelect: document.getElementById("tribeColorSelect"),
   saveTribeButton: document.getElementById("saveTribeButton"),
+  detailsClaimButton: document.getElementById("detailsClaimButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
   detailsCloseTop: document.getElementById("detailsCloseTop"),
   detailsCloseBottom: document.getElementById("detailsCloseBottom"),
@@ -807,6 +808,7 @@ function openDetails(leagueId, playerId) {
   if (!ctx || !p) return;
   const seasonStatsBody = ui.detailsSeasonStatsBody || document.getElementById("detailsSeasonStatsBody");
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
+  const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
   if (!seasonStatsBody || !overallStatsRow) return;
   const overallTable = overallStatsRow.closest("table");
   if (overallTable) {
@@ -874,6 +876,16 @@ function openDetails(leagueId, playerId) {
   });
   ui.tribeAssignSection.classList.toggle("view-hidden", !canManage);
   ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
+  if (detailsClaimButton) {
+    const draft = ensureDraftConfig(ctx);
+    const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
+    const showClaim = ctx.membership.role !== "admin" && draft.isDraftActive && !currentTeamId;
+    detailsClaimButton.classList.toggle("view-hidden", !showClaim);
+    if (showClaim) {
+      detailsClaimButton.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
+      detailsClaimButton.textContent = "Claim";
+    }
+  }
   if (canManage) {
     ui.tribeAssignPanel.classList.add("view-hidden");
     ui.tribeSelect.innerHTML = `<option value="">None</option>`;
@@ -2044,6 +2056,23 @@ function wire() {
     }
     catch (err) { msg("league", err.message); render(); }
   });
+  if (ui.detailsClaimButton) {
+    ui.detailsClaimButton.addEventListener("click", async () => {
+      const r = route();
+      if (r.name !== "league" || !state.detailsTargetPlayerId) return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!ctx || ctx.membership.role === "admin") return;
+      try {
+        await claimPlayer(ctx, state.detailsTargetPlayerId);
+        closeDetails();
+        msg("", "");
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+  }
   ui.detailsCloseTop.addEventListener("click", closeDetails);
   ui.detailsCloseBottom.addEventListener("click", closeDetails);
   ui.detailsModal.addEventListener("click", (e) => { if (e.target === ui.detailsModal) closeDetails(); });

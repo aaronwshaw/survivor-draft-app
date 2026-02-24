@@ -353,6 +353,9 @@ export default function Home() {
               </div>
             </section>
             <div className="modal-actions">
+              <button id="detailsClaimButton" type="button" className="view-hidden">
+                Claim
+              </button>
               <button id="detailsEliminateButton" type="button" className="danger-button">
                 Eliminated
               </button>
