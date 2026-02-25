@@ -1,0 +1,2 @@
+ALTER TABLE "DraftState"
+ADD COLUMN "pickOrderByPlayerId" JSONB NOT NULL DEFAULT '{}';

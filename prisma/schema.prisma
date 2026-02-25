@@ -79,6 +79,7 @@ model DraftState {
   id                    String   @id @default(cuid())
   leagueId              String   @unique
   assignmentByPlayerId  Json     @default("{}")
+  pickOrderByPlayerId   Json     @default("{}")
   eliminationByPlayerId Json     @default("{}")
   draftOrderTeamIds     Json     @default("[]")
   currentPickIndex      Int      @default(0)

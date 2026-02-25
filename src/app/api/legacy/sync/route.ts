@@ -45,6 +45,7 @@ export async function GET(request: Request) {
       select: {
         leagueId: true,
         assignmentByPlayerId: true,
+        pickOrderByPlayerId: true,
         eliminationByPlayerId: true,
         draftOrderTeamIds: true,
         currentPickIndex: true,

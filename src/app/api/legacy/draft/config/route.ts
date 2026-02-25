@@ -23,6 +23,16 @@ function toAssignmentMap(value: unknown): Record<string, string> {
   return out;
 }
 
+function toPickOrderMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const n = Number(raw) || 0;
+    if (n > 0) out[key] = Math.floor(n);
+  }
+  return out;
+}
+
 function toEliminationMap(value: unknown): Record<string, number> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, number> = {};
@@ -76,6 +86,7 @@ export async function POST(request: Request) {
         select: {
           id: true,
           assignmentByPlayerId: true,
+          pickOrderByPlayerId: true,
           eliminationByPlayerId: true,
           draftOrderTeamIds: true,
           currentPickIndex: true,
@@ -89,6 +100,7 @@ export async function POST(request: Request) {
           data: {
             leagueId,
             assignmentByPlayerId: {},
+            pickOrderByPlayerId: {},
             eliminationByPlayerId: {},
             draftOrderTeamIds: teamIds,
             currentPickIndex: 0,
@@ -99,6 +111,7 @@ export async function POST(request: Request) {
           select: {
             id: true,
             assignmentByPlayerId: true,
+            pickOrderByPlayerId: true,
             eliminationByPlayerId: true,
             draftOrderTeamIds: true,
             currentPickIndex: true,
@@ -118,6 +131,7 @@ export async function POST(request: Request) {
       }
 
       let assignmentByPlayerId = toAssignmentMap(draft.assignmentByPlayerId);
+      let pickOrderByPlayerId = toPickOrderMap(draft.pickOrderByPlayerId);
       let eliminationByPlayerId = toEliminationMap(draft.eliminationByPlayerId);
       let currentPickIndex = draft.currentPickIndex;
       let roundNumber = draft.roundNumber;
@@ -139,6 +153,7 @@ export async function POST(request: Request) {
         order = shuffle(order);
       } else if (action === "start") {
         assignmentByPlayerId = {};
+        pickOrderByPlayerId = {};
         eliminationByPlayerId = {};
         currentPickIndex = 0;
         roundNumber = 1;
@@ -148,6 +163,7 @@ export async function POST(request: Request) {
         isDraftActive = false;
       } else if (action === "reset") {
         assignmentByPlayerId = {};
+        pickOrderByPlayerId = {};
         eliminationByPlayerId = {};
       }
 
@@ -155,6 +171,7 @@ export async function POST(request: Request) {
         where: { id: draft.id },
         data: {
           assignmentByPlayerId,
+          pickOrderByPlayerId,
           eliminationByPlayerId,
           draftOrderTeamIds: order,
           currentPickIndex,
@@ -165,6 +182,7 @@ export async function POST(request: Request) {
         select: {
           leagueId: true,
           assignmentByPlayerId: true,
+          pickOrderByPlayerId: true,
           eliminationByPlayerId: true,
           draftOrderTeamIds: true,
           currentPickIndex: true,

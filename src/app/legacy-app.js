@@ -295,7 +295,7 @@ function membership(userId, leagueId) { return state.db.memberships.find((m) => 
 function draftState(leagueId) {
   let d = state.db.draftStates.find((x) => x.leagueId === leagueId);
   if (!d) {
-    d = { leagueId, assignmentByPlayerId: {}, updatedAt: nowIso() };
+    d = { leagueId, assignmentByPlayerId: {}, pickOrderByPlayerId: {}, updatedAt: nowIso() };
     state.db.draftStates.push(d);
     saveDb();
   }
@@ -306,6 +306,9 @@ function ensureDraftConfig(ctx) {
   const d = draftState(ctx.league.id);
   if (!Array.isArray(d.draftOrderTeamIds) || d.draftOrderTeamIds.length !== ctx.teams.length) {
     d.draftOrderTeamIds = ctx.teams.map((t) => t.id);
+  }
+  if (!d.pickOrderByPlayerId || typeof d.pickOrderByPlayerId !== "object" || Array.isArray(d.pickOrderByPlayerId)) {
+    d.pickOrderByPlayerId = {};
   }
   if (typeof d.currentPickIndex !== "number") d.currentPickIndex = 0;
   if (typeof d.roundNumber !== "number") d.roundNumber = 1;
@@ -323,6 +326,7 @@ function currentTurnTeamId(draft) {
 
 function applyDraftState(draft, payload) {
   if (payload.assignmentByPlayerId) draft.assignmentByPlayerId = payload.assignmentByPlayerId;
+  if (payload.pickOrderByPlayerId) draft.pickOrderByPlayerId = payload.pickOrderByPlayerId;
   if (Array.isArray(payload.draftOrderTeamIds)) draft.draftOrderTeamIds = payload.draftOrderTeamIds;
   if (typeof payload.currentPickIndex === "number") draft.currentPickIndex = payload.currentPickIndex;
   if (typeof payload.roundNumber === "number") draft.roundNumber = payload.roundNumber;

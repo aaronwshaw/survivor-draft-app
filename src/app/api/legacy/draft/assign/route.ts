@@ -22,6 +22,16 @@ function toTeamIdArray(value: unknown): string[] {
   return value.filter((item): item is string => typeof item === "string" && !!item);
 }
 
+function toPickOrderMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    const n = Number(raw) || 0;
+    if (n > 0) out[key] = Math.floor(n);
+  }
+  return out;
+}
+
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as AssignBody | null;
   const userId = String(body?.userId || "");
@@ -49,6 +59,7 @@ export async function POST(request: Request) {
         select: {
           id: true,
           assignmentByPlayerId: true,
+          pickOrderByPlayerId: true,
           draftOrderTeamIds: true,
           currentPickIndex: true,
           roundNumber: true,
@@ -66,6 +77,7 @@ export async function POST(request: Request) {
           data: {
             leagueId,
             assignmentByPlayerId: {},
+            pickOrderByPlayerId: {},
             eliminationByPlayerId: {},
             draftOrderTeamIds: teamRows.map((row) => row.id),
             currentPickIndex: 0,
@@ -76,6 +88,7 @@ export async function POST(request: Request) {
           select: {
             id: true,
             assignmentByPlayerId: true,
+            pickOrderByPlayerId: true,
             draftOrderTeamIds: true,
             currentPickIndex: true,
             roundNumber: true,
@@ -86,6 +99,7 @@ export async function POST(request: Request) {
       }
 
       const assignmentByPlayerId = toAssignmentMap(draft.assignmentByPlayerId);
+      const pickOrderByPlayerId = toPickOrderMap(draft.pickOrderByPlayerId);
       const currentTeamId = assignmentByPlayerId[playerId] || null;
       const wasUnassigned = !currentTeamId;
 
@@ -132,6 +146,8 @@ export async function POST(request: Request) {
       const order = toTeamIdArray(draft.draftOrderTeamIds);
 
       if (teamId && isDraftActive && wasUnassigned && order.length > 0) {
+        const maxPick = Object.values(pickOrderByPlayerId).reduce((max, n) => (n > max ? n : max), 0);
+        pickOrderByPlayerId[playerId] = maxPick + 1;
         if (playerCount > 0 && picksMade >= playerCount) {
           isDraftActive = false;
         } else if (direction === 1) {
@@ -153,6 +169,7 @@ export async function POST(request: Request) {
         where: { id: draft.id },
         data: {
           assignmentByPlayerId,
+          pickOrderByPlayerId,
           currentPickIndex,
           roundNumber,
           direction,
@@ -160,6 +177,7 @@ export async function POST(request: Request) {
         },
         select: {
           assignmentByPlayerId: true,
+          pickOrderByPlayerId: true,
           draftOrderTeamIds: true,
           currentPickIndex: true,
           roundNumber: true,
