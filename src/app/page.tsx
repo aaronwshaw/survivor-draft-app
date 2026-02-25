@@ -30,6 +30,9 @@ export default function Home() {
               <button id="draftViewButton" className="secondary active-view" type="button">
                 Draft
               </button>
+              <button id="allPlayersViewButton" className="secondary" type="button">
+                All Players
+              </button>
               <button id="teamsViewButton" className="secondary" type="button">
                 Teams
               </button>
@@ -299,6 +302,33 @@ export default function Home() {
               <div id="playersContainer" className="players-grid" />
             </section>
           </div>
+
+          <section id="allPlayersView" className="card view-hidden" aria-labelledby="allPlayersTitle">
+            <div className="panel-head">
+              <h3 id="allPlayersTitle">All Players</h3>
+              <div className="filters-inline">
+                <label className="inline-filter" htmlFor="allPlayersDraftFilterSelect">
+                  Sort
+                  <select id="allPlayersDraftFilterSelect">
+                    <option value="alpha">Alphabetical</option>
+                    <option value="season">First Season</option>
+                    <option value="placement">Highest Placement</option>
+                    <option value="immunity">Individual Immunities</option>
+                  </select>
+                </label>
+                <label className="inline-filter" htmlFor="allPlayersTribeFilterSelect">
+                  Tribe
+                  <select id="allPlayersTribeFilterSelect">
+                    <option value="all">All Tribes</option>
+                  </select>
+                </label>
+                <button id="allPlayersPoolViewToggle" type="button" className="secondary pool-view-toggle">
+                  Pictures: Off
+                </button>
+              </div>
+            </div>
+            <div id="allPlayersContainer" className="players-grid" />
+          </section>
 
           <section id="teamsColumnsView" className="teams-columns-panel view-hidden" aria-labelledby="teamsColumnsTitle">
             <h3 id="teamsColumnsTitle">Teams Split View (8 Columns)</h3>

@@ -848,7 +848,11 @@ button:hover {
 
 .team-column h3 {
   font-size: 0.82rem;
-  margin-bottom: 0.35rem;
+  margin: 0 0 0.6rem;
+  line-height: 1.2;
+  min-height: 2.4em;
+  display: flex;
+  align-items: flex-end;
 }
 
 .team-column-photos {
@@ -877,7 +881,7 @@ button:hover {
 }
 
 .team-list-card h4 {
-  margin: 0;
+  margin: 0 0 0.2rem;
   font-size: 1rem;
 }
 

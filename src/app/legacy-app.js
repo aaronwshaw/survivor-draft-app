@@ -99,11 +99,13 @@ const ui = {
   teamAssignmentsMessage: document.getElementById("teamAssignmentsMessage"),
   backToLeaguesButton: document.getElementById("backToLeaguesButton"),
   draftViewButton: document.getElementById("draftViewButton"),
+  allPlayersViewButton: document.getElementById("allPlayersViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
   yourTeamViewButton: document.getElementById("yourTeamViewButton"),
   survivorMgmtViewButton: document.getElementById("survivorMgmtViewButton"),
   resetButton: document.getElementById("resetButton"),
   draftLayout: document.getElementById("draftLayout"),
+  allPlayersView: document.getElementById("allPlayersView"),
   teamsColumnsView: document.getElementById("teamsColumnsView"),
   yourTeamView: document.getElementById("yourTeamView"),
   survivorManagementView: document.getElementById("survivorManagementView"),
@@ -120,9 +122,13 @@ const ui = {
   saveTeamNameButton: document.getElementById("saveTeamNameButton"),
   teamsContainer: document.getElementById("teamsContainer"),
   playersContainer: document.getElementById("playersContainer"),
+  allPlayersContainer: document.getElementById("allPlayersContainer"),
   draftFilterSelect: document.getElementById("draftFilterSelect"),
+  allPlayersDraftFilterSelect: document.getElementById("allPlayersDraftFilterSelect"),
   tribeFilterSelect: document.getElementById("tribeFilterSelect"),
+  allPlayersTribeFilterSelect: document.getElementById("allPlayersTribeFilterSelect"),
   playerPoolViewToggle: document.getElementById("playerPoolViewToggle"),
+  allPlayersPoolViewToggle: document.getElementById("allPlayersPoolViewToggle"),
   teamColumnsContainer: document.getElementById("teamColumnsContainer"),
   assignModal: document.getElementById("assignModal"),
   assignPlayerName: document.getElementById("assignPlayerName"),
@@ -709,17 +715,20 @@ function leagueRows(userId) {
 
 function updateDraftSubview() {
   const isDraft = state.currentSubview === "draft";
+  const isAllPlayers = state.currentSubview === "allplayers";
   const isTeams = state.currentSubview === "teams";
   const isOrder = state.currentSubview === "order";
   const isYourTeam = state.currentSubview === "yourteam";
   const isSurvivor = state.currentSubview === "survivor";
   ui.draftLayout.classList.toggle("view-hidden", !isDraft);
+  ui.allPlayersView.classList.toggle("view-hidden", !isAllPlayers);
   ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
   ui.leagueManagementView.classList.toggle("view-hidden", !isOrder);
   ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
   ui.survivorManagementView.classList.toggle("view-hidden", !isSurvivor);
   ui.leagueInfoCard.classList.toggle("view-hidden", !(isYourTeam || isOrder));
   ui.draftViewButton.classList.toggle("active-view", isDraft);
+  ui.allPlayersViewButton.classList.toggle("active-view", isAllPlayers);
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
   ui.yourTeamViewButton.classList.toggle("active-view", isYourTeam);
@@ -1038,6 +1047,36 @@ function playerCard(ctx, p) {
     actions.appendChild(d);
     actions.appendChild(a);
   }
+  card.appendChild(actions);
+  return card;
+}
+
+function allPlayersCard(ctx, player) {
+  const tribe = tribeForPlayer(player);
+  const card = document.createElement("article");
+  card.className = "player-card";
+  const wrap = document.createElement("div");
+  wrap.className = "photo-wrap";
+  const img = document.createElement("img");
+  img.className = "player-photo";
+  img.src = player.photoUrl;
+  img.alt = player.name;
+  img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  applyTribeBorder(img, tribe);
+  wrap.appendChild(img);
+  const badge = eliminationBadge(player);
+  if (badge) wrap.appendChild(badge);
+  card.appendChild(wrap);
+  const h = document.createElement("h3");
+  h.textContent = player.name;
+  card.appendChild(h);
+  const actions = document.createElement("div");
+  actions.className = "card-actions";
+  const d = document.createElement("button");
+  d.className = "secondary";
+  d.textContent = "Details";
+  d.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  actions.appendChild(d);
   card.appendChild(actions);
   return card;
 }
@@ -1378,6 +1417,31 @@ function sortDraftPlayers(players) {
   }
   sorted.sort((a, b) => a.name.localeCompare(b.name));
   return sorted;
+}
+
+function refreshPlayerPoolControls() {
+  const toggleLabel = state.playerPoolShowPhotos ? "Pictures: On" : "Pictures: Off";
+  if (ui.draftFilterSelect) ui.draftFilterSelect.value = state.draftFilter;
+  if (ui.allPlayersDraftFilterSelect) ui.allPlayersDraftFilterSelect.value = state.draftFilter;
+  if (ui.tribeFilterSelect) ui.tribeFilterSelect.value = state.tribeFilter;
+  if (ui.allPlayersTribeFilterSelect) ui.allPlayersTribeFilterSelect.value = state.tribeFilter;
+  if (ui.playerPoolViewToggle) ui.playerPoolViewToggle.textContent = toggleLabel;
+  if (ui.allPlayersPoolViewToggle) ui.allPlayersPoolViewToggle.textContent = toggleLabel;
+}
+
+function populatePlayerPoolTribeFilters() {
+  const buildOptions = (selectEl) => {
+    if (!selectEl) return;
+    selectEl.innerHTML = `<option value="all">All Tribes</option>`;
+    (state.db.tribes || []).forEach((tribe) => {
+      const opt = document.createElement("option");
+      opt.value = tribe.id;
+      opt.textContent = tribe.name;
+      selectEl.appendChild(opt);
+    });
+  };
+  buildOptions(ui.tribeFilterSelect);
+  buildOptions(ui.allPlayersTribeFilterSelect);
 }
 
 function renderLeagues() {
@@ -1738,30 +1802,22 @@ function renderLeague(leagueId) {
   updateDraftSubview();
   ui.teamsContainer.innerHTML = "";
   ui.playersContainer.innerHTML = "";
+  ui.allPlayersContainer.innerHTML = "";
   ui.teamColumnsContainer.innerHTML = "";
   ctx.teams.forEach((t) => ui.teamsContainer.appendChild(teamCard(ctx, t)));
-  ui.tribeFilterSelect.innerHTML = `<option value="all">All Tribes</option>`;
-  (state.db.tribes || []).forEach((tribe) => {
-    const opt = document.createElement("option");
-    opt.value = tribe.id;
-    opt.textContent = tribe.name;
-    ui.tribeFilterSelect.appendChild(opt);
-  });
+  populatePlayerPoolTribeFilters();
   if (state.tribeFilter !== "all" && !(state.db.tribes || []).some((t) => t.id === state.tribeFilter)) {
     state.tribeFilter = "all";
   }
-  ui.tribeFilterSelect.value = state.tribeFilter;
-  if (ui.playerPoolViewToggle) {
-    ui.playerPoolViewToggle.textContent = state.playerPoolShowPhotos ? "Pictures: On" : "Pictures: Off";
-  }
+  refreshPlayerPoolControls();
   ui.playersContainer.className = state.playerPoolShowPhotos ? "players-grid photos-mode" : "players-grid list-mode";
+  ui.allPlayersContainer.className = state.playerPoolShowPhotos ? "players-grid photos-mode" : "players-grid list-mode";
 
   const unassignedPlayers = sortDraftPlayers(
     state.players
       .filter((p) => !draft.assignmentByPlayerId[p.id])
       .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
   );
-  ui.draftFilterSelect.value = state.draftFilter;
   if (unassignedPlayers.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
@@ -1769,6 +1825,17 @@ function renderLeague(leagueId) {
     ui.playersContainer.appendChild(empty);
   } else {
     unassignedPlayers.forEach((p) => ui.playersContainer.appendChild(playerCard(ctx, p)));
+  }
+  const allFilteredPlayers = sortDraftPlayers(
+    state.players.filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+  );
+  if (allFilteredPlayers.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No players match the selected filters.";
+    ui.allPlayersContainer.appendChild(empty);
+  } else {
+    allFilteredPlayers.forEach((p) => ui.allPlayersContainer.appendChild(allPlayersCard(ctx, p)));
   }
   renderTeamsSubview(ctx);
   renderYourTeamView(ctx);
@@ -1969,6 +2036,14 @@ function wire() {
     ui.topBarMenu.classList.remove("open");
     render();
   });
+  if (ui.allPlayersViewButton) {
+    ui.allPlayersViewButton.addEventListener("click", () => {
+      state.currentSubview = "allplayers";
+      state.isEditingTeamName = false;
+      ui.topBarMenu.classList.remove("open");
+      render();
+    });
+  }
   ui.teamsViewButton.addEventListener("click", () => {
     state.currentSubview = "teams";
     state.teamsViewTeamId = null;
@@ -2025,13 +2100,36 @@ function wire() {
     const r = route();
     if (r.name === "league") render();
   });
+  if (ui.allPlayersDraftFilterSelect) {
+    ui.allPlayersDraftFilterSelect.addEventListener("change", () => {
+      const next = ui.allPlayersDraftFilterSelect.value;
+      state.draftFilter =
+        next === "season" || next === "placement" || next === "immunity" ? next : "alpha";
+      const r = route();
+      if (r.name === "league") render();
+    });
+  }
   ui.tribeFilterSelect.addEventListener("change", () => {
     state.tribeFilter = ui.tribeFilterSelect.value || "all";
     const r = route();
     if (r.name === "league") render();
   });
+  if (ui.allPlayersTribeFilterSelect) {
+    ui.allPlayersTribeFilterSelect.addEventListener("change", () => {
+      state.tribeFilter = ui.allPlayersTribeFilterSelect.value || "all";
+      const r = route();
+      if (r.name === "league") render();
+    });
+  }
   if (ui.playerPoolViewToggle) {
     ui.playerPoolViewToggle.addEventListener("click", () => {
+      state.playerPoolShowPhotos = !state.playerPoolShowPhotos;
+      const r = route();
+      if (r.name === "league") render();
+    });
+  }
+  if (ui.allPlayersPoolViewToggle) {
+    ui.allPlayersPoolViewToggle.addEventListener("click", () => {
       state.playerPoolShowPhotos = !state.playerPoolShowPhotos;
       const r = route();
       if (r.name === "league") render();
