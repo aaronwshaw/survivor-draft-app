@@ -141,6 +141,7 @@ const ui = {
   newTribeName: document.getElementById("newTribeName"),
   tribeColorSelect: document.getElementById("tribeColorSelect"),
   saveTribeButton: document.getElementById("saveTribeButton"),
+  detailsAssignButton: document.getElementById("detailsAssignButton"),
   detailsClaimButton: document.getElementById("detailsClaimButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
   detailsCloseTop: document.getElementById("detailsCloseTop"),
@@ -811,6 +812,7 @@ function openDetails(leagueId, playerId) {
   if (!ctx || !p) return;
   const seasonStatsBody = ui.detailsSeasonStatsBody || document.getElementById("detailsSeasonStatsBody");
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
+  const detailsAssignButton = ui.detailsAssignButton || document.getElementById("detailsAssignButton");
   const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
   if (!seasonStatsBody || !overallStatsRow) return;
   const overallTable = overallStatsRow.closest("table");
@@ -879,6 +881,14 @@ function openDetails(leagueId, playerId) {
   });
   ui.tribeAssignSection.classList.toggle("view-hidden", !canManage);
   ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
+  if (detailsAssignButton) {
+    const showAssign = ctx.membership.role === "admin";
+    detailsAssignButton.classList.toggle("view-hidden", !showAssign);
+    if (showAssign) {
+      detailsAssignButton.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
+      detailsAssignButton.textContent = "Assign";
+    }
+  }
   if (detailsClaimButton) {
     const draft = ensureDraftConfig(ctx);
     const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
@@ -983,15 +993,11 @@ function playerCard(ctx, p) {
   a.className = "secondary";
   if (ctx.membership.role === "admin") {
     const draft = ensureDraftConfig(ctx);
-    a.textContent = "Assign";
-    a.addEventListener("click", () => openAssign(ctx.league.id, p.id));
-    a.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
     actions.appendChild(d);
-    actions.appendChild(a);
 
     if (draft.isDraftActive) {
       const claimButton = document.createElement("button");
-      claimButton.className = "secondary";
+      claimButton.className = "danger-button";
       claimButton.textContent = "Claim";
       claimButton.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
       claimButton.addEventListener("click", async () => {
@@ -1002,6 +1008,7 @@ function playerCard(ctx, p) {
     }
   } else {
     a.textContent = "Claim";
+    a.className = "danger-button";
     const draft = ensureDraftConfig(ctx);
     if (!draft.isDraftActive) {
       a.classList.add("view-hidden");
@@ -2090,6 +2097,16 @@ function wire() {
         msg("league", err.message);
         render();
       }
+    });
+  }
+  if (ui.detailsAssignButton) {
+    ui.detailsAssignButton.addEventListener("click", () => {
+      const r = route();
+      if (r.name !== "league" || !state.detailsTargetPlayerId) return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!ctx || ctx.membership.role !== "admin") return;
+      closeDetails();
+      openAssign(r.leagueId, state.detailsTargetPlayerId);
     });
   }
   ui.detailsCloseTop.addEventListener("click", closeDetails);

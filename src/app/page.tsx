@@ -353,6 +353,9 @@ export default function Home() {
               </div>
             </section>
             <div className="modal-actions">
+              <button id="detailsAssignButton" type="button" className="secondary view-hidden">
+                Assign
+              </button>
               <button id="detailsClaimButton" type="button" className="view-hidden">
                 Claim
               </button>
