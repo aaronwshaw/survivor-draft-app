@@ -1085,6 +1085,27 @@ function allPlayersCard(ctx, player) {
   return card;
 }
 
+function pickOrderForPlayer(ctx, playerId) {
+  const n = Number(ctx?.draft?.pickOrderByPlayerId?.[playerId]) || 0;
+  return n > 0 ? n : Number.POSITIVE_INFINITY;
+}
+
+function orderedTeamsForTeamsView(ctx) {
+  return [...ctx.teams].sort((a, b) => {
+    const aPlayers = playersForTeam(ctx, a.id);
+    const bPlayers = playersForTeam(ctx, b.id);
+    const aMin = aPlayers.length
+      ? Math.min(...aPlayers.map((p) => pickOrderForPlayer(ctx, p.id)))
+      : Number.POSITIVE_INFINITY;
+    const bMin = bPlayers.length
+      ? Math.min(...bPlayers.map((p) => pickOrderForPlayer(ctx, p.id)))
+      : Number.POSITIVE_INFINITY;
+    if (aMin !== bMin) return aMin - bMin;
+    if (a.slotNumber !== b.slotNumber) return a.slotNumber - b.slotNumber;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function teamColumn(ctx, team) {
   const col = document.createElement("article");
   col.className = "team-column";
@@ -1093,17 +1114,15 @@ function teamColumn(ctx, team) {
   col.appendChild(h);
   const grid = document.createElement("div");
   grid.className = "team-column-photos";
-  const pids = Object.entries(ctx.draft.assignmentByPlayerId).filter(([, t]) => t === team.id).map(([pid]) => pid);
-  if (!pids.length) {
+  const players = playersForTeam(ctx, team.id);
+  if (!players.length) {
     const p = document.createElement("p");
     p.className = "empty-state";
     p.textContent = "No players";
     col.appendChild(p);
     return col;
   }
-  pids.forEach((pid) => {
-    const p = state.players.find((x) => x.id === pid);
-    if (!p) return;
+  players.forEach((p) => {
     const f = document.createElement("figure");
     f.className = "team-photo-card";
     const wrap = document.createElement("div");
@@ -1131,7 +1150,15 @@ function playersForTeam(ctx, teamId) {
   const pids = Object.entries(ctx.draft.assignmentByPlayerId)
     .filter(([, t]) => t === teamId)
     .map(([pid]) => pid);
-  return pids.map((pid) => state.players.find((x) => x.id === pid)).filter(Boolean);
+  return pids
+    .map((pid) => state.players.find((x) => x.id === pid))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aPick = pickOrderForPlayer(ctx, a.id);
+      const bPick = pickOrderForPlayer(ctx, b.id);
+      if (aPick !== bPick) return aPick - bPick;
+      return a.name.localeCompare(b.name);
+    });
 }
 
 function teamListCard(ctx, team) {
@@ -1224,20 +1251,21 @@ function teamDetailCard(ctx, player) {
 
 function renderTeamsSubview(ctx) {
   ui.teamColumnsContainer.innerHTML = "";
+  const orderedTeams = orderedTeamsForTeamsView(ctx);
   if (!isMobileLayout()) {
-    ctx.teams.forEach((team) => ui.teamColumnsContainer.appendChild(teamColumn(ctx, team)));
+    orderedTeams.forEach((team) => ui.teamColumnsContainer.appendChild(teamColumn(ctx, team)));
     return;
   }
 
   if (!state.teamsViewTeamId) {
-    ctx.teams.forEach((team) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, team)));
+    orderedTeams.forEach((team) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, team)));
     return;
   }
 
   const team = ctx.teams.find((item) => item.id === state.teamsViewTeamId);
   if (!team) {
     state.teamsViewTeamId = null;
-    ctx.teams.forEach((item) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, item)));
+    orderedTeams.forEach((item) => ui.teamColumnsContainer.appendChild(teamListCard(ctx, item)));
     return;
   }
 
