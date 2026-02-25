@@ -48,7 +48,9 @@ const state = {
   liveSyncTimer: null,
   liveSyncInFlight: false,
   liveSyncIntervalMs: 0,
-  teamAssignmentsMsgTimer: null
+  teamAssignmentsMsgTimer: null,
+  pendingDraftScrollReset: false,
+  lastRouteKey: ""
 };
 
 const ui = {
@@ -724,6 +726,19 @@ function updateDraftSubview() {
   ui.survivorMgmtViewButton.classList.toggle("active-view", isSurvivor);
   const shouldLockDesktop = isDraft && !isMobileLayout() && route().name === "league";
   document.body.classList.toggle("draft-desktop-lock", shouldLockDesktop);
+}
+
+function resetDraftScrollPosition() {
+  const reset = () => {
+    window.scrollTo(0, 0);
+    if (ui.playersContainer) {
+      ui.playersContainer.scrollTop = 0;
+      const poolPanel = ui.playersContainer.closest(".pool-panel");
+      if (poolPanel) poolPanel.scrollTop = 0;
+    }
+  };
+  reset();
+  requestAnimationFrame(reset);
 }
 
 function ordinal(n) {
@@ -1758,11 +1773,21 @@ function renderLeague(leagueId) {
   renderTeamsSubview(ctx);
   renderYourTeamView(ctx);
   renderSurvivorManagement(ctx);
+  if (state.currentSubview === "draft" && state.pendingDraftScrollReset) {
+    state.pendingDraftScrollReset = false;
+    resetDraftScrollPosition();
+  }
 }
 
 function render() {
   renderAuth();
   const r = route();
+  const routeKey = r.name === "league" ? `${r.name}:${r.leagueId}` : r.name;
+  const enteringLeagueRoute = r.name === "league" && routeKey !== state.lastRouteKey;
+  state.lastRouteKey = routeKey;
+  if (enteringLeagueRoute && state.currentSubview === "draft") {
+    state.pendingDraftScrollReset = true;
+  }
   const user = currentUser();
   if (!user && r.name !== "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/login"); return; }
   if (user && r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/leagues"); return; }
@@ -1784,6 +1809,9 @@ function wire() {
     const nowMobile = isMobileLayout();
     if (state.lastLayoutIsMobile === nowMobile) return;
     state.lastLayoutIsMobile = nowMobile;
+    if (state.currentSubview === "draft") {
+      state.pendingDraftScrollReset = true;
+    }
     render();
   });
   ui.topMenuToggle.addEventListener("click", () => {
@@ -1936,6 +1964,7 @@ function wire() {
   });
   ui.draftViewButton.addEventListener("click", () => {
     state.currentSubview = "draft";
+    state.pendingDraftScrollReset = true;
     state.isEditingTeamName = false;
     ui.topBarMenu.classList.remove("open");
     render();
