@@ -672,6 +672,18 @@ select {
   font-size: 1rem;
 }
 
+.player-inline-badges {
+  display: none;
+}
+
+.players-grid.list-mode .player-inline-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.45rem;
+  vertical-align: middle;
+}
+
 .team-indicator {
   margin: 0.3rem 0 0.6rem;
   color: var(--muted);

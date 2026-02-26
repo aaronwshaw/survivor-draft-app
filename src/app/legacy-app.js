@@ -1240,7 +1240,47 @@ function allPlayersCard(ctx, player) {
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);
   const h = document.createElement("h3");
-  h.textContent = player.name;
+  const nameText = document.createElement("span");
+  nameText.textContent = player.name;
+  h.appendChild(nameText);
+
+  const inlineBadges = document.createElement("span");
+  inlineBadges.className = "player-inline-badges";
+  const eliminationNum = Number(player.eliminated) || 0;
+  if (eliminationNum > 0) {
+    const place = Math.max(1, state.players.length - eliminationNum + 1);
+    const elim = document.createElement("span");
+    elim.className = "team-list-badge team-list-badge-elim";
+    elim.textContent = String(place);
+    elim.title = `${ordinal(place)} place`;
+    inlineBadges.appendChild(elim);
+  }
+  const heldAdvantages = normalizeAdvantageAssignments(player?.advantages)
+    .filter((entry) => entry.status === "HOLDS");
+  if (heldAdvantages.length) {
+    const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
+    const advNames = heldAdvantages.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+    const advBadge = document.createElement("span");
+    advBadge.className = "team-list-badge team-list-badge-advantage";
+    advBadge.textContent = "A";
+    advBadge.title = `Holds: ${advNames.join(", ")}`;
+    inlineBadges.appendChild(advBadge);
+  }
+  if (player?.vote === false) {
+    const noVote = document.createElement("span");
+    noVote.className = "team-list-badge team-list-badge-no-vote";
+    noVote.textContent = "NV";
+    noVote.title = "No vote";
+    inlineBadges.appendChild(noVote);
+  }
+  if (tribe) {
+    const tribeDot = document.createElement("span");
+    tribeDot.className = "team-list-badge team-list-badge-tribe";
+    tribeDot.style.setProperty("--tribe-color", tribe.color || "#999");
+    tribeDot.title = `Tribe: ${tribe.name}`;
+    inlineBadges.appendChild(tribeDot);
+  }
+  h.appendChild(inlineBadges);
   card.appendChild(h);
   const actions = document.createElement("div");
   actions.className = "card-actions";
