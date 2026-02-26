@@ -1593,7 +1593,7 @@ function renderSurvivorManagement(ctx) {
   });
 
   ui.survivorPlayersGrid.innerHTML = "";
-  state.players.forEach((player) => {
+  sortEliminatedLast([...state.players]).forEach((player) => {
     ui.survivorPlayersGrid.appendChild(teamDetailCard(ctx, player));
   });
 }
@@ -1667,6 +1667,22 @@ function sortDraftPlayers(players) {
   }
   sorted.sort((a, b) => a.name.localeCompare(b.name));
   return sorted;
+}
+
+function sortEliminatedLast(players) {
+  const active = [];
+  const eliminated = [];
+  players.forEach((player) => {
+    if ((Number(player?.eliminated) || 0) > 0) eliminated.push(player);
+    else active.push(player);
+  });
+  eliminated.sort((a, b) => {
+    const aElim = Number(a?.eliminated) || 0;
+    const bElim = Number(b?.eliminated) || 0;
+    if (aElim !== bElim) return bElim - aElim;
+    return String(a?.name || "").localeCompare(String(b?.name || ""));
+  });
+  return [...active, ...eliminated];
 }
 
 function refreshPlayerPoolControls() {
@@ -2076,9 +2092,9 @@ function renderLeague(leagueId) {
   } else {
     unassignedPlayers.forEach((p) => ui.playersContainer.appendChild(playerCard(ctx, p)));
   }
-  const allFilteredPlayers = sortDraftPlayers(
+  const allFilteredPlayers = sortEliminatedLast(sortDraftPlayers(
     state.players.filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
-  );
+  ));
   if (allFilteredPlayers.length === 0) {
     const empty = document.createElement("p");
     empty.className = "empty-state";
