@@ -1124,6 +1124,28 @@ button:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
+.advantage-badge.stacked-badge {
+  top: 48px;
+}
+
+.no-vote-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #b3261e;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+  letter-spacing: 0.02em;
+}
+
 .danger-button:disabled {
   background: #7f858e;
   cursor: not-allowed;

@@ -100,6 +100,7 @@ model Player {
   age           Int?
   tribe         String?
   eliminated    Int?
+  vote          Boolean  @default(true)
   seasons       Json     @default("[]")
   seasonCount   Int      @default(0)
   winnerCount   Int      @default(0)

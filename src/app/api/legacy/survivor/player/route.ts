@@ -6,6 +6,7 @@ type Body = {
   playerId?: string;
   tribeId?: string | null;
   eliminated?: number | null;
+  vote?: boolean | null;
   advantages?: Array<{ advantageID?: string; status?: string }> | null;
 };
 
@@ -28,6 +29,8 @@ export async function POST(request: Request) {
   const eliminatedRaw = body?.eliminated;
   const eliminated =
     eliminatedRaw == null || Number(eliminatedRaw) <= 0 ? null : Math.max(1, Math.floor(Number(eliminatedRaw)));
+  const voteRaw = body?.vote;
+  const vote = typeof voteRaw === "boolean" ? voteRaw : null;
   const advantagesRaw = Array.isArray(body?.advantages) ? body.advantages : null;
   const advantages = advantagesRaw
     ? advantagesRaw
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
 
   const existing = await prisma.player.findUnique({
     where: { id: playerId },
-    select: { id: true },
+    select: { id: true, vote: true },
   });
   if (!existing) {
     return NextResponse.json({ error: "Player not found." }, { status: 404 });
@@ -83,8 +86,9 @@ export async function POST(request: Request) {
       data: {
         tribe: tribeId,
         eliminated,
+        vote: vote == null ? existing.vote : vote,
       },
-      select: { id: true, tribe: true, eliminated: true },
+      select: { id: true, tribe: true, eliminated: true, vote: true },
     });
 
     if (advantages != null) {

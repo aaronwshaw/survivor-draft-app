@@ -161,6 +161,7 @@ const ui = {
   saveTribeButton: document.getElementById("saveTribeButton"),
   saveAdvantageButton: document.getElementById("saveAdvantageButton"),
   detailsAssignButton: document.getElementById("detailsAssignButton"),
+  detailsVoteButton: document.getElementById("detailsVoteButton"),
   detailsClaimButton: document.getElementById("detailsClaimButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
   detailsCloseTop: document.getElementById("detailsCloseTop"),
@@ -607,7 +608,7 @@ async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
   });
 }
 
-async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated, advantages) {
+async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated, advantages, vote) {
   return apiJson("/api/legacy/survivor/player", {
     method: "POST",
     body: JSON.stringify({
@@ -616,6 +617,7 @@ async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated, advanta
       tribeId,
       eliminated,
       advantages,
+      vote,
     }),
   });
 }
@@ -700,9 +702,16 @@ function nextEliminationNumber() {
   return nums.length === 0 ? 1 : Math.max(...nums) + 1;
 }
 
-async function updatePlayerSurvivorState(ctx, playerId, nextTribeId, nextEliminated, nextAdvantages) {
+async function updatePlayerSurvivorState(ctx, playerId, nextTribeId, nextEliminated, nextAdvantages, nextVote) {
   if (!ctx.user.isOwner) throw new Error("Only owners can manage survivor data.");
-  await persistSurvivorPlayer(ctx, playerId, nextTribeId || null, nextEliminated || null, nextAdvantages || []);
+  await persistSurvivorPlayer(
+    ctx,
+    playerId,
+    nextTribeId || null,
+    nextEliminated || null,
+    nextAdvantages || [],
+    typeof nextVote === "boolean" ? nextVote : true,
+  );
   await syncDb();
 }
 
@@ -804,6 +813,15 @@ function eliminationBadge(player) {
   return b;
 }
 
+function noVoteBadge(player) {
+  if (player?.vote !== false) return null;
+  const b = document.createElement("span");
+  b.className = "no-vote-badge";
+  b.textContent = "NV";
+  b.title = "No vote";
+  return b;
+}
+
 function advantageBadge(player) {
   const assignments = normalizeAdvantageAssignments(player?.advantages);
   const held = assignments.filter((entry) => entry.status === "HOLDS");
@@ -882,6 +900,7 @@ function openDetails(leagueId, playerId) {
   const seasonStatsBody = ui.detailsSeasonStatsBody || document.getElementById("detailsSeasonStatsBody");
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
   const detailsAssignButton = ui.detailsAssignButton || document.getElementById("detailsAssignButton");
+  const detailsVoteButton = ui.detailsVoteButton || document.getElementById("detailsVoteButton");
   const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
   const assignedAdvantages = normalizeAdvantageAssignments(p.advantages);
   const statusByAdvantageId = Object.fromEntries(
@@ -997,6 +1016,10 @@ function openDetails(leagueId, playerId) {
       detailsAssignButton.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
       detailsAssignButton.textContent = "Assign";
     }
+  }
+  if (detailsVoteButton) {
+    detailsVoteButton.classList.toggle("view-hidden", !canManage);
+    detailsVoteButton.textContent = p.vote === false ? "No Vote" : "Has Vote";
   }
   if (detailsClaimButton) {
     const draft = ensureDraftConfig(ctx);
@@ -1124,7 +1147,10 @@ function playerCard(ctx, p) {
   img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const nvBadge = noVoteBadge(p);
+  if (nvBadge) wrap.appendChild(nvBadge);
   const aBadge = advantageBadge(p);
+  if (aBadge && nvBadge) aBadge.classList.add("stacked-badge");
   if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(p);
   if (badge) wrap.appendChild(badge);
@@ -1189,7 +1215,10 @@ function allPlayersCard(ctx, player) {
   img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const nvBadge = noVoteBadge(player);
+  if (nvBadge) wrap.appendChild(nvBadge);
   const aBadge = advantageBadge(player);
+  if (aBadge && nvBadge) aBadge.classList.add("stacked-badge");
   if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(player);
   if (badge) wrap.appendChild(badge);
@@ -1269,7 +1298,10 @@ function teamColumn(ctx, team) {
     img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
     applyTribeBorder(img, tribeForPlayer(p));
     wrap.appendChild(img);
+    const nvBadge = noVoteBadge(p);
+    if (nvBadge) wrap.appendChild(nvBadge);
     const aBadge = advantageBadge(p);
+    if (aBadge && nvBadge) aBadge.classList.add("stacked-badge");
     if (aBadge) wrap.appendChild(aBadge);
     const badge = eliminationBadge(p);
     if (badge) wrap.appendChild(badge);
@@ -1369,7 +1401,10 @@ function teamDetailCard(ctx, player) {
   img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const nvBadge = noVoteBadge(player);
+  if (nvBadge) wrap.appendChild(nvBadge);
   const aBadge = advantageBadge(player);
+  if (aBadge && nvBadge) aBadge.classList.add("stacked-badge");
   if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(player);
   if (badge) wrap.appendChild(badge);
@@ -2435,7 +2470,14 @@ function wire() {
       if (!player) return;
       const nextElim = Number(player.eliminated) > 0 ? null : nextEliminationNumber();
       const advantages = normalizeAdvantageAssignments(player.advantages);
-      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, player.tribe || null, nextElim, advantages);
+      await updatePlayerSurvivorState(
+        ctx,
+        state.detailsTargetPlayerId,
+        player.tribe || null,
+        nextElim,
+        advantages,
+        player.vote !== false,
+      );
       msg("", "");
       render();
       updateEliminateButton(ctxForLeague(r.leagueId), state.detailsTargetPlayerId);
@@ -2469,6 +2511,35 @@ function wire() {
       openAssign(r.leagueId, state.detailsTargetPlayerId);
     });
   }
+  if (ui.detailsVoteButton) {
+    ui.detailsVoteButton.addEventListener("click", async () => {
+      const r = route();
+      if (r.name !== "league" || !state.detailsTargetPlayerId) return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!canManageSurvivor(ctx)) return;
+      try {
+        const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
+        if (!player) return;
+        const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
+        const advantages = normalizeAdvantageAssignments(player.advantages);
+        const nextVote = player.vote === false;
+        await updatePlayerSurvivorState(
+          ctx,
+          state.detailsTargetPlayerId,
+          player.tribe || null,
+          eliminated,
+          advantages,
+          nextVote,
+        );
+        msg("league", nextVote ? "Player now has vote." : "Player now has no vote.");
+        render();
+        openDetails(r.leagueId, state.detailsTargetPlayerId);
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+  }
   ui.detailsCloseTop.addEventListener("click", closeDetails);
   ui.detailsCloseBottom.addEventListener("click", closeDetails);
   ui.detailsModal.addEventListener("click", (e) => { if (e.target === ui.detailsModal) closeDetails(); });
@@ -2490,7 +2561,14 @@ function wire() {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
       const advantages = normalizeAdvantageAssignments(player?.advantages);
-      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, selectedTribeId || null, eliminated, advantages);
+      await updatePlayerSurvivorState(
+        ctx,
+        state.detailsTargetPlayerId,
+        selectedTribeId || null,
+        eliminated,
+        advantages,
+        player?.vote !== false,
+      );
       ui.tribeAssignPanel.classList.add("view-hidden");
       msg("league", "Tribe assignment saved.");
       render();
@@ -2523,6 +2601,7 @@ function wire() {
           player?.tribe || null,
           eliminated,
           advantages,
+          player?.vote !== false,
         );
         ui.advantageAssignPanel.classList.add("view-hidden");
         msg("league", "Advantage assignment saved.");

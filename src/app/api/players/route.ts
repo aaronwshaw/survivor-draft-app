@@ -36,6 +36,7 @@ export async function GET() {
       age: true,
       tribe: true,
       eliminated: true,
+      vote: true,
       seasons: true,
       advantageLinks: {
         select: {
@@ -81,6 +82,7 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
+        vote: typeof player.vote === "boolean" ? player.vote : true,
         advantages: (player.advantageLinks || []).map((entry) => ({
           advantageID: entry.advantageID,
           status: entry.status,
@@ -99,6 +101,7 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
+        vote: typeof player.vote === "boolean" ? player.vote : true,
         advantages: (player.advantageLinks || []).map((entry) => ({
           advantageID: entry.advantageID,
           status: entry.status,
@@ -116,6 +119,7 @@ export async function GET() {
       age: player.age,
       tribe: player.tribe,
       eliminated: player.eliminated,
+      vote: typeof player.vote === "boolean" ? player.vote : true,
       advantages: (player.advantageLinks || []).map((entry) => ({
         advantageID: entry.advantageID,
         status: entry.status,

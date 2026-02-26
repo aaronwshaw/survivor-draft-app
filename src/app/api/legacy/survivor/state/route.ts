@@ -49,6 +49,7 @@ export async function GET(request: Request) {
         age: true,
         tribe: true,
         eliminated: true,
+        vote: true,
         seasons: true,
         advantageLinks: {
           select: {
@@ -63,6 +64,7 @@ export async function GET(request: Request) {
 
   const playersWithAdvantages = players.map((player) => ({
     ...player,
+    vote: typeof player.vote === "boolean" ? player.vote : true,
     advantages: (player.advantageLinks || []).map((entry) => ({
       advantageID: entry.advantageID,
       status: entry.status,
