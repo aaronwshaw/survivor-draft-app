@@ -1379,6 +1379,26 @@ function teamListCard(ctx, team) {
       nameSpan.textContent = player.name;
       li.appendChild(nameSpan);
 
+      const heldAdvantages = normalizeAdvantageAssignments(player?.advantages)
+        .filter((entry) => entry.status === "HOLDS");
+      if (heldAdvantages.length) {
+        const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
+        const advNames = heldAdvantages.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+        const advBadge = document.createElement("span");
+        advBadge.className = "team-list-badge team-list-badge-advantage";
+        advBadge.textContent = "A";
+        advBadge.title = `Holds: ${advNames.join(", ")}`;
+        li.appendChild(advBadge);
+      }
+
+      if (player?.vote === false) {
+        const noVote = document.createElement("span");
+        noVote.className = "team-list-badge team-list-badge-no-vote";
+        noVote.textContent = "NV";
+        noVote.title = "No vote";
+        li.appendChild(noVote);
+      }
+
       const tribe = tribeForPlayer(player);
       if (tribe) {
         const tribeDot = document.createElement("span");

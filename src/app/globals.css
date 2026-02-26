@@ -938,6 +938,22 @@ button:hover {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
+.team-list-badge-advantage {
+  background: #228b22;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.team-list-badge-no-vote {
+  background: #fb8c00;
+  color: #fff;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+}
+
 .team-detail-head {
   display: flex;
   align-items: center;
