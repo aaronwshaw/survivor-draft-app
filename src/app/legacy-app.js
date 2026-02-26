@@ -1063,6 +1063,12 @@ function openDetails(leagueId, playerId) {
       holdsInput.name = groupName;
       holdsInput.value = "HOLDS";
       holdsInput.checked = statusByAdvantageId[adv.advantageID] === "HOLDS";
+      holdsInput.addEventListener("mousedown", () => {
+        holdsInput.dataset.wasChecked = holdsInput.checked ? "1" : "0";
+      });
+      holdsInput.addEventListener("click", () => {
+        if (holdsInput.dataset.wasChecked === "1") holdsInput.checked = false;
+      });
       holdsLabel.appendChild(holdsInput);
       holdsLabel.append(" Holds");
 
@@ -1072,6 +1078,12 @@ function openDetails(leagueId, playerId) {
       usedInput.name = groupName;
       usedInput.value = "USED";
       usedInput.checked = statusByAdvantageId[adv.advantageID] === "USED";
+      usedInput.addEventListener("mousedown", () => {
+        usedInput.dataset.wasChecked = usedInput.checked ? "1" : "0";
+      });
+      usedInput.addEventListener("click", () => {
+        if (usedInput.dataset.wasChecked === "1") usedInput.checked = false;
+      });
       usedLabel.appendChild(usedInput);
       usedLabel.append(" Used");
 
