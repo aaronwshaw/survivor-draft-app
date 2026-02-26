@@ -8,6 +8,8 @@ type AssignBody = {
   teamId?: string | null;
 };
 
+const DRAFT_ROUND_LIMIT_KEY = "__draft_round_limit";
+
 function toAssignmentMap(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const out: Record<string, string> = {};
@@ -30,6 +32,20 @@ function toPickOrderMap(value: unknown): Record<string, number> {
     if (n > 0) out[key] = Math.floor(n);
   }
   return out;
+}
+
+function toStringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof raw === "string" && raw) out[key] = raw;
+  }
+  return out;
+}
+
+function roundLimitFromMap(value: Record<string, string>): number | null {
+  const n = Number(value[DRAFT_ROUND_LIMIT_KEY]) || 0;
+  return n > 0 ? Math.floor(n) : null;
 }
 
 export async function POST(request: Request) {
@@ -65,6 +81,7 @@ export async function POST(request: Request) {
           roundNumber: true,
           direction: true,
           isDraftActive: true,
+          tribeByPlayerId: true,
         },
       });
       if (!draft) {
@@ -84,6 +101,7 @@ export async function POST(request: Request) {
             roundNumber: 1,
             direction: 1,
             isDraftActive: false,
+            tribeByPlayerId: {},
           },
           select: {
             id: true,
@@ -94,12 +112,15 @@ export async function POST(request: Request) {
             roundNumber: true,
             direction: true,
             isDraftActive: true,
+            tribeByPlayerId: true,
           },
         });
       }
 
       const assignmentByPlayerId = toAssignmentMap(draft.assignmentByPlayerId);
       const pickOrderByPlayerId = toPickOrderMap(draft.pickOrderByPlayerId);
+      const tribeByPlayerId = toStringMap(draft.tribeByPlayerId);
+      const roundLimit = roundLimitFromMap(tribeByPlayerId);
       const currentTeamId = assignmentByPlayerId[playerId] || null;
       const wasUnassigned = !currentTeamId;
 
@@ -134,11 +155,22 @@ export async function POST(request: Request) {
         if (currentTeam && currentTeam.id !== targetTeam.id && !canEditTeam(currentTeam.ownerUserId)) {
           throw new Error("You can only edit your own team.");
         }
+        if (draft.isDraftActive && roundLimit) {
+          const teamPickCounts: Record<string, number> = {};
+          for (const assignedTeamId of Object.values(assignmentByPlayerId)) {
+            teamPickCounts[assignedTeamId] = (teamPickCounts[assignedTeamId] || 0) + 1;
+          }
+          const currentCount = teamPickCounts[targetTeam.id] || 0;
+          const movingFromDifferentTeam = !!currentTeamId && currentTeamId !== targetTeam.id;
+          const addingNewPick = !currentTeamId || movingFromDifferentTeam;
+          const nextCount = addingNewPick ? currentCount + 1 : currentCount;
+          if (nextCount > roundLimit) {
+            throw new Error(`This team already reached the round limit (${roundLimit}).`);
+          }
+        }
         assignmentByPlayerId[playerId] = targetTeam.id;
       }
 
-      const playerCount = await tx.player.count();
-      const picksMade = Object.keys(assignmentByPlayerId).length;
       let currentPickIndex = draft.currentPickIndex;
       let roundNumber = draft.roundNumber;
       let direction = draft.direction === -1 ? -1 : 1;
@@ -148,20 +180,60 @@ export async function POST(request: Request) {
       if (teamId && isDraftActive && wasUnassigned && order.length > 0) {
         const maxPick = Object.values(pickOrderByPlayerId).reduce((max, n) => (n > max ? n : max), 0);
         pickOrderByPlayerId[playerId] = maxPick + 1;
-        if (playerCount > 0 && picksMade >= playerCount) {
+
+        const teamPickCounts: Record<string, number> = {};
+        for (const assignedTeamId of Object.values(assignmentByPlayerId)) {
+          teamPickCounts[assignedTeamId] = (teamPickCounts[assignedTeamId] || 0) + 1;
+        }
+
+        const draftedPlayerIds = Object.keys(assignmentByPlayerId);
+        const remainingAvailableCount = await tx.player.count({
+          where: {
+            OR: [{ eliminated: null }, { eliminated: 0 }],
+            ...(draftedPlayerIds.length > 0 ? { id: { notIn: draftedPlayerIds } } : {}),
+          },
+        });
+
+        const reachedRoundCap = !!roundLimit && order.every((teamIdInOrder) => (teamPickCounts[teamIdInOrder] || 0) >= roundLimit);
+        if (reachedRoundCap || remainingAvailableCount <= 0) {
           isDraftActive = false;
-        } else if (direction === 1) {
-          if (currentPickIndex >= order.length - 1) {
-            direction = -1;
+        } else {
+          const hasCap = !!roundLimit;
+          const isEligible = (teamIdInOrder: string) => !hasCap || (teamPickCounts[teamIdInOrder] || 0) < (roundLimit || 0);
+
+          if (direction === 1) {
+            if (currentPickIndex >= order.length - 1) {
+              direction = -1;
+              roundNumber += 1;
+            } else {
+              currentPickIndex += 1;
+            }
+          } else if (currentPickIndex <= 0) {
+            direction = 1;
             roundNumber += 1;
           } else {
-            currentPickIndex += 1;
+            currentPickIndex -= 1;
           }
-        } else if (currentPickIndex <= 0) {
-          direction = 1;
-          roundNumber += 1;
-        } else {
-          currentPickIndex -= 1;
+
+          if (hasCap) {
+            let guard = order.length * 4;
+            while (guard > 0 && !isEligible(order[currentPickIndex])) {
+              if (direction === 1) {
+                if (currentPickIndex >= order.length - 1) {
+                  direction = -1;
+                  roundNumber += 1;
+                } else {
+                  currentPickIndex += 1;
+                }
+              } else if (currentPickIndex <= 0) {
+                direction = 1;
+                roundNumber += 1;
+              } else {
+                currentPickIndex -= 1;
+              }
+              guard -= 1;
+            }
+          }
         }
       }
 
@@ -183,6 +255,7 @@ export async function POST(request: Request) {
           roundNumber: true,
           direction: true,
           isDraftActive: true,
+          tribeByPlayerId: true,
           updatedAt: true,
         },
       });

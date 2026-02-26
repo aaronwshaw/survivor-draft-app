@@ -1,5 +1,6 @@
 const DB_KEY = "survivor_app_db_v2";
 const SESSION_KEY = "survivor_app_session_v1";
+const DRAFT_ROUND_LIMIT_KEY = "__draft_round_limit";
 
 const FALLBACK_PLAYERS = [
   { id: "angelina-keeley", name: "Angelina Keeley", photoUrl: "photos/Angelina.webp", age: 35, tribe: null, seasons: [] },
@@ -90,6 +91,7 @@ const ui = {
   draftTurnStatus: document.getElementById("draftTurnStatus"),
   draftOrderList: document.getElementById("draftOrderList"),
   randomizeDraftOrderButton: document.getElementById("randomizeDraftOrderButton"),
+  draftRoundsSelect: document.getElementById("draftRoundsSelect"),
   startDraftButton: document.getElementById("startDraftButton"),
   stopDraftButton: document.getElementById("stopDraftButton"),
   deleteLeagueMgmtButton: document.getElementById("deleteLeagueMgmtButton"),
@@ -338,11 +340,26 @@ function ensureDraftConfig(ctx) {
   if (!d.pickOrderByPlayerId || typeof d.pickOrderByPlayerId !== "object" || Array.isArray(d.pickOrderByPlayerId)) {
     d.pickOrderByPlayerId = {};
   }
+  if (!d.tribeByPlayerId || typeof d.tribeByPlayerId !== "object" || Array.isArray(d.tribeByPlayerId)) {
+    d.tribeByPlayerId = {};
+  }
   if (typeof d.currentPickIndex !== "number") d.currentPickIndex = 0;
   if (typeof d.roundNumber !== "number") d.roundNumber = 1;
   if (d.direction !== -1 && d.direction !== 1) d.direction = 1;
   if (typeof d.isDraftActive !== "boolean") d.isDraftActive = false;
   return d;
+}
+
+function draftRoundLimit(draft) {
+  const raw = draft?.tribeByPlayerId?.[DRAFT_ROUND_LIMIT_KEY];
+  const n = Number(raw) || 0;
+  return n > 0 ? Math.floor(n) : null;
+}
+
+function maxDraftRounds(ctx) {
+  const activePlayerCount = state.players.filter((player) => (Number(player?.eliminated) || 0) === 0).length;
+  const teamCount = Math.max(1, ctx.teams.length);
+  return Math.max(1, Math.ceil(activePlayerCount / teamCount));
 }
 
 function currentTurnTeamId(draft) {
@@ -355,6 +372,7 @@ function currentTurnTeamId(draft) {
 function applyDraftState(draft, payload) {
   if (payload.assignmentByPlayerId) draft.assignmentByPlayerId = payload.assignmentByPlayerId;
   if (payload.pickOrderByPlayerId) draft.pickOrderByPlayerId = payload.pickOrderByPlayerId;
+  if (payload.tribeByPlayerId) draft.tribeByPlayerId = payload.tribeByPlayerId;
   if (Array.isArray(payload.draftOrderTeamIds)) draft.draftOrderTeamIds = payload.draftOrderTeamIds;
   if (typeof payload.currentPickIndex === "number") draft.currentPickIndex = payload.currentPickIndex;
   if (typeof payload.roundNumber === "number") draft.roundNumber = payload.roundNumber;
@@ -2029,6 +2047,11 @@ async function randomizeDraftOrder(ctx) {
   await syncDb();
 }
 
+async function setDraftRounds(ctx, rounds) {
+  await persistDraftConfig(ctx, "set_rounds", { rounds });
+  await syncDb();
+}
+
 async function startDraft(ctx) {
   await persistDraftConfig(ctx, "start");
   await syncDb();
@@ -2043,9 +2066,13 @@ function renderDraftOrderCard(ctx, draft) {
   ui.draftOrderList.innerHTML = "";
   const isAdmin = ctx.membership.role === "admin";
   const turnTeam = teamForPick(ctx, draft);
+  const maxRounds = maxDraftRounds(ctx);
+  const configuredRounds = draftRoundLimit(draft);
+  const roundLimit = Math.max(1, Math.min(configuredRounds || maxRounds, maxRounds));
   ui.draftTurnStatus.textContent = draft.isDraftActive && turnTeam
     ? `Draft Active: ${turnTeam.name} is on the clock (Round ${draft.roundNumber})`
     : "Draft is not active.";
+  ui.draftTurnStatus.textContent += ` Rounds: ${roundLimit}.`;
 
   draft.draftOrderTeamIds.forEach((teamId, index) => {
     const team = ctx.teams.find((t) => t.id === teamId);
@@ -2082,6 +2109,17 @@ function renderDraftOrderCard(ctx, draft) {
   });
 
   ui.randomizeDraftOrderButton.disabled = !isAdmin || draft.isDraftActive;
+  if (ui.draftRoundsSelect) {
+    ui.draftRoundsSelect.innerHTML = "";
+    for (let round = 1; round <= maxRounds; round += 1) {
+      const option = document.createElement("option");
+      option.value = String(round);
+      option.textContent = String(round);
+      ui.draftRoundsSelect.appendChild(option);
+    }
+    ui.draftRoundsSelect.value = String(roundLimit);
+    ui.draftRoundsSelect.disabled = !isAdmin || draft.isDraftActive;
+  }
   ui.startDraftButton.disabled = !isAdmin || draft.isDraftActive;
   ui.startDraftButton.classList.toggle("view-hidden", draft.isDraftActive);
   ui.stopDraftButton.classList.toggle("view-hidden", !draft.isDraftActive);
@@ -2316,6 +2354,25 @@ function wire() {
       render();
     }
   });
+  if (ui.draftRoundsSelect) {
+    ui.draftRoundsSelect.addEventListener("change", async () => {
+      const r = route();
+      if (r.name !== "league") return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!ctx || ctx.membership.role !== "admin") return;
+      const rounds = Number(ui.draftRoundsSelect.value) || 1;
+      const maxRounds = maxDraftRounds(ctx);
+      const clamped = Math.max(1, Math.min(rounds, maxRounds));
+      try {
+        await setDraftRounds(ctx, clamped);
+        msg("league", `Rounds set to ${clamped}.`);
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+  }
   ui.startDraftButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league") return;

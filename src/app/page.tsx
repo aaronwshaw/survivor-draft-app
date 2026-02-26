@@ -270,6 +270,10 @@ export default function Home() {
               <h3 id="draftAdminTitle">Draft Order Management</h3>
               <p className="muted">Set the team order, randomize, and start a snake draft.</p>
               <div className="button-row">
+                <label className="inline-filter" htmlFor="draftRoundsSelect">
+                  Rounds
+                  <select id="draftRoundsSelect" />
+                </label>
                 <button id="randomizeDraftOrderButton" type="button" className="secondary">
                   Randomize Order
                 </button>

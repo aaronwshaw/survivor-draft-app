@@ -4,10 +4,13 @@ import { NextResponse } from "next/server";
 type ConfigBody = {
   userId?: string;
   leagueId?: string;
-  action?: "move" | "randomize" | "start" | "stop" | "reset";
+  action?: "move" | "randomize" | "start" | "stop" | "reset" | "set_rounds";
   teamId?: string;
   direction?: -1 | 1;
+  rounds?: number;
 };
+
+const DRAFT_ROUND_LIMIT_KEY = "__draft_round_limit";
 
 function toTeamIdArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -43,6 +46,15 @@ function toEliminationMap(value: unknown): Record<string, number> {
   return out;
 }
 
+function toStringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [key, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof raw === "string" && raw) out[key] = raw;
+  }
+  return out;
+}
+
 function shuffle<T>(items: T[]): T[] {
   const out = [...items];
   for (let i = out.length - 1; i > 0; i -= 1) {
@@ -59,6 +71,7 @@ export async function POST(request: Request) {
   const action = body?.action;
   const teamId = String(body?.teamId || "");
   const moveDirection = body?.direction === -1 ? -1 : 1;
+  const rounds = Math.floor(Number(body?.rounds) || 0);
 
   if (!userId || !leagueId || !action) {
     return NextResponse.json({ error: "userId, leagueId, and action are required." }, { status: 400 });
@@ -93,6 +106,7 @@ export async function POST(request: Request) {
           roundNumber: true,
           direction: true,
           isDraftActive: true,
+          tribeByPlayerId: true,
         },
       });
       if (!draft) {
@@ -107,6 +121,7 @@ export async function POST(request: Request) {
             roundNumber: 1,
             direction: 1,
             isDraftActive: false,
+            tribeByPlayerId: {},
           },
           select: {
             id: true,
@@ -118,6 +133,7 @@ export async function POST(request: Request) {
             roundNumber: true,
             direction: true,
             isDraftActive: true,
+            tribeByPlayerId: true,
           },
         });
       }
@@ -137,6 +153,7 @@ export async function POST(request: Request) {
       let roundNumber = draft.roundNumber;
       let direction = draft.direction === -1 ? -1 : 1;
       let isDraftActive = draft.isDraftActive;
+      const tribeByPlayerId = toStringMap(draft.tribeByPlayerId);
 
       if (action === "move") {
         if (!teamId) throw new Error("teamId is required for move.");
@@ -165,6 +182,17 @@ export async function POST(request: Request) {
         assignmentByPlayerId = {};
         pickOrderByPlayerId = {};
         eliminationByPlayerId = {};
+      } else if (action === "set_rounds") {
+        if (isDraftActive) throw new Error("Cannot change rounds while draft is active.");
+        const teamCount = Math.max(1, teamIds.length);
+        const activePlayerCount = await tx.player.count({
+          where: { OR: [{ eliminated: null }, { eliminated: 0 }] },
+        });
+        const maxRounds = Math.max(1, Math.ceil(activePlayerCount / teamCount));
+        if (rounds < 1 || rounds > maxRounds) {
+          throw new Error(`rounds must be between 1 and ${maxRounds}.`);
+        }
+        tribeByPlayerId[DRAFT_ROUND_LIMIT_KEY] = String(rounds);
       }
 
       const updated = await tx.draftState.update({
@@ -178,6 +206,7 @@ export async function POST(request: Request) {
           roundNumber,
           direction,
           isDraftActive,
+          tribeByPlayerId,
         },
         select: {
           leagueId: true,
@@ -189,6 +218,7 @@ export async function POST(request: Request) {
           roundNumber: true,
           direction: true,
           isDraftActive: true,
+          tribeByPlayerId: true,
           updatedAt: true,
         },
       });
