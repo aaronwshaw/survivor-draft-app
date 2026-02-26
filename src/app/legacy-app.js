@@ -144,6 +144,8 @@ const ui = {
   detailsName: document.getElementById("detailsName"),
   detailsAge: document.getElementById("detailsAge"),
   detailsTribe: document.getElementById("detailsTribe"),
+  detailsHoldsList: document.getElementById("detailsHoldsList"),
+  detailsUsedList: document.getElementById("detailsUsedList"),
   detailsSeasonStatsBody: document.getElementById("detailsSeasonStatsBody"),
   detailsOverallStatsRow: document.getElementById("detailsOverallStatsRow"),
   tribeAssignSection: document.getElementById("tribeAssignSection"),
@@ -153,7 +155,7 @@ const ui = {
   advantageAssignSection: document.getElementById("advantageAssignSection"),
   advantageAssignToggle: document.getElementById("advantageAssignToggle"),
   advantageAssignPanel: document.getElementById("advantageAssignPanel"),
-  advantageSelect: document.getElementById("advantageSelect"),
+  advantageStatusList: document.getElementById("advantageStatusList"),
   newTribeName: document.getElementById("newTribeName"),
   tribeColorSelect: document.getElementById("tribeColorSelect"),
   saveTribeButton: document.getElementById("saveTribeButton"),
@@ -172,6 +174,21 @@ function nowIso() { return new Date().toISOString(); }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
+function normalizeAdvantageAssignments(rawAdvantages) {
+  if (!Array.isArray(rawAdvantages)) return [];
+  return rawAdvantages
+    .map((entry) => {
+      if (!entry) return null;
+      if (typeof entry === "string") {
+        return { advantageID: entry, status: "HOLDS" };
+      }
+      const advantageID = String(entry.advantageID || "").trim();
+      const status = String(entry.status || "").trim().toUpperCase();
+      if (!advantageID) return null;
+      return { advantageID, status: status === "USED" ? "USED" : "HOLDS" };
+    })
+    .filter(Boolean);
+}
 const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [], advantages: [] };
 
 function isMobileLayout() {
@@ -853,7 +870,10 @@ function openDetails(leagueId, playerId) {
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
   const detailsAssignButton = ui.detailsAssignButton || document.getElementById("detailsAssignButton");
   const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
-  const assignedAdvantages = Array.isArray(p.advantages) ? p.advantages : [];
+  const assignedAdvantages = normalizeAdvantageAssignments(p.advantages);
+  const statusByAdvantageId = Object.fromEntries(
+    assignedAdvantages.map((entry) => [entry.advantageID, entry.status]),
+  );
   if (!seasonStatsBody || !overallStatsRow) return;
   const overallTable = overallStatsRow.closest("table");
   if (overallTable) {
@@ -865,11 +885,20 @@ function openDetails(leagueId, playerId) {
   const tribe = tribeForId(p.tribe);
   const canManage = canManageSurvivor(ctx);
   state.detailsTargetPlayerId = playerId;
+  const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
+  const holds = assignedAdvantages
+    .filter((entry) => entry.status === "HOLDS")
+    .map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+  const used = assignedAdvantages
+    .filter((entry) => entry.status === "USED")
+    .map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
   ui.detailsPhoto.src = p.photoUrl;
   ui.detailsPhoto.alt = p.name;
   ui.detailsName.textContent = p.name;
   ui.detailsAge.textContent = p.age ?? "Unknown";
   ui.detailsTribe.textContent = tribe?.name || "Unknown";
+  if (ui.detailsHoldsList) ui.detailsHoldsList.textContent = holds.length ? holds.join(", ") : "-";
+  if (ui.detailsUsedList) ui.detailsUsedList.textContent = used.length ? used.join(", ") : "-";
   applyTribeBorder(ui.detailsPhoto, tribe);
   seasonStatsBody.innerHTML = "";
   overallStatsRow.innerHTML = "";
@@ -952,15 +981,42 @@ function openDetails(leagueId, playerId) {
     });
     ui.tribeSelect.value = tribe?.id || "";
     ui.advantageAssignPanel.classList.add("view-hidden");
-    ui.advantageSelect.innerHTML = "";
+    ui.advantageStatusList.innerHTML = "";
     (state.db.advantages || []).forEach((adv) => {
-      const opt = document.createElement("option");
-      opt.value = adv.advantageID;
-      opt.textContent = `${adv.name} - ${adv.description}`;
-      ui.advantageSelect.appendChild(opt);
-    });
-    Array.from(ui.advantageSelect.options).forEach((option) => {
-      option.selected = assignedAdvantages.includes(option.value);
+      const row = document.createElement("div");
+      row.className = "advantage-status-row";
+      row.dataset.advantageId = adv.advantageID;
+      const label = document.createElement("span");
+      label.className = "advantage-status-name";
+      label.textContent = adv.name;
+      row.appendChild(label);
+
+      const controls = document.createElement("div");
+      controls.className = "advantage-status-controls";
+      const groupName = `adv-status-${adv.advantageID}`;
+
+      const holdsLabel = document.createElement("label");
+      const holdsInput = document.createElement("input");
+      holdsInput.type = "radio";
+      holdsInput.name = groupName;
+      holdsInput.value = "HOLDS";
+      holdsInput.checked = statusByAdvantageId[adv.advantageID] === "HOLDS";
+      holdsLabel.appendChild(holdsInput);
+      holdsLabel.append(" Holds");
+
+      const usedLabel = document.createElement("label");
+      const usedInput = document.createElement("input");
+      usedInput.type = "radio";
+      usedInput.name = groupName;
+      usedInput.value = "USED";
+      usedInput.checked = statusByAdvantageId[adv.advantageID] === "USED";
+      usedLabel.appendChild(usedInput);
+      usedLabel.append(" Used");
+
+      controls.appendChild(holdsLabel);
+      controls.appendChild(usedLabel);
+      row.appendChild(controls);
+      ui.advantageStatusList.appendChild(row);
     });
   }
   updateEliminateButton(ctx, playerId);
@@ -2331,7 +2387,7 @@ function wire() {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       if (!player) return;
       const nextElim = Number(player.eliminated) > 0 ? null : nextEliminationNumber();
-      const advantages = Array.isArray(player.advantages) ? player.advantages : [];
+      const advantages = normalizeAdvantageAssignments(player.advantages);
       await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, player.tribe || null, nextElim, advantages);
       msg("", "");
       render();
@@ -2386,7 +2442,7 @@ function wire() {
     try {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
-      const advantages = Array.isArray(player?.advantages) ? player.advantages : [];
+      const advantages = normalizeAdvantageAssignments(player?.advantages);
       await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, selectedTribeId || null, eliminated, advantages);
       ui.tribeAssignPanel.classList.add("view-hidden");
       msg("league", "Tribe assignment saved.");
@@ -2403,13 +2459,17 @@ function wire() {
       if (r.name !== "league" || !state.detailsTargetPlayerId) return;
       const ctx = ctxForLeague(r.leagueId);
       if (!canManageSurvivor(ctx)) return;
-      const selectedAdvantageIds = Array.from(ui.advantageSelect.selectedOptions)
-        .map((option) => option.value)
-        .filter(Boolean);
       try {
         const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
         const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
-        const advantages = selectedAdvantageIds;
+        const advantages = Array.from(ui.advantageStatusList.querySelectorAll(".advantage-status-row"))
+          .map((row) => {
+            const advantageID = String(row.getAttribute("data-advantage-id") || "");
+            const selected = row.querySelector("input[type=\"radio\"]:checked");
+            if (!advantageID || !selected) return null;
+            return { advantageID, status: selected.value === "USED" ? "USED" : "HOLDS" };
+          })
+          .filter(Boolean);
         await updatePlayerSurvivorState(
           ctx,
           state.detailsTargetPlayerId,

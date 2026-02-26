@@ -6,7 +6,7 @@ type Body = {
   playerId?: string;
   tribeId?: string | null;
   eliminated?: number | null;
-  advantages?: string[] | null;
+  advantages?: Array<{ advantageID?: string; status?: string }> | null;
 };
 
 type TribeLookup = {
@@ -18,6 +18,7 @@ type AdvantageLookup = {
     select: { advantageID: true };
   }) => Promise<Array<{ advantageID: string }>>;
 };
+const ALLOWED_ADVANTAGE_STATUS = new Set(["HOLDS", "USED"]);
 
 export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as Body | null;
@@ -29,7 +30,12 @@ export async function POST(request: Request) {
     eliminatedRaw == null || Number(eliminatedRaw) <= 0 ? null : Math.max(1, Math.floor(Number(eliminatedRaw)));
   const advantagesRaw = Array.isArray(body?.advantages) ? body.advantages : null;
   const advantages = advantagesRaw
-    ? advantagesRaw.map((id) => String(id || "").trim()).filter(Boolean)
+    ? advantagesRaw
+        .map((entry) => ({
+          advantageID: String(entry?.advantageID || "").trim(),
+          status: String(entry?.status || "").trim().toUpperCase(),
+        }))
+        .filter((entry) => entry.advantageID && ALLOWED_ADVANTAGE_STATUS.has(entry.status))
     : null;
 
   if (!userId || !playerId) {
@@ -50,7 +56,7 @@ export async function POST(request: Request) {
   }
 
   if (advantages) {
-    const uniqueIds = [...new Set(advantages)];
+    const uniqueIds = [...new Set(advantages.map((entry) => entry.advantageID))];
     if (uniqueIds.length > 0) {
       const advantageModel = (prisma as unknown as { advantage: AdvantageLookup }).advantage;
       const found = await advantageModel.findMany({
@@ -85,7 +91,11 @@ export async function POST(request: Request) {
       await tx.advantagePlayer.deleteMany({ where: { playerId } });
       if (advantages.length > 0) {
         await tx.advantagePlayer.createMany({
-          data: [...new Set(advantages)].map((advantageID) => ({ playerId, advantageID })),
+          data: advantages.map((entry) => ({
+            playerId,
+            advantageID: entry.advantageID,
+            status: entry.status,
+          })),
           skipDuplicates: true,
         });
       }
@@ -93,9 +103,12 @@ export async function POST(request: Request) {
 
     const links = await tx.advantagePlayer.findMany({
       where: { playerId },
-      select: { advantageID: true },
+      select: { advantageID: true, status: true },
     });
-    return { ...updated, advantages: links.map((entry) => entry.advantageID) };
+    return {
+      ...updated,
+      advantages: links.map((entry) => ({ advantageID: entry.advantageID, status: entry.status })),
+    };
   });
 
   return NextResponse.json({ player });

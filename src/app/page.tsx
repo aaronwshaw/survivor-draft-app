@@ -408,10 +408,8 @@ export default function Home() {
               <div id="advantageAssignPanel" className="tribe-assign-panel view-hidden">
                 <div className="form-grid">
                   <label>
-                    Advantage
-                    <select id="advantageSelect" multiple size={6}>
-                      <option value="">None</option>
-                    </select>
+                    Advantage Status
+                    <div id="advantageStatusList" className="advantage-status-list" />
                   </label>
                   <button id="saveAdvantageButton" type="button" className="secondary">
                     Save Advantage
@@ -437,6 +435,17 @@ export default function Home() {
           <p>
             <strong>Tribe:</strong> <span id="detailsTribe" />
           </p>
+          <h4>Advantages</h4>
+          <div className="player-advantage-summary">
+            <div className="player-advantage-col">
+              <h5>Holds</h5>
+              <p id="detailsHoldsList" className="muted">-</p>
+            </div>
+            <div className="player-advantage-col">
+              <h5>Used</h5>
+              <p id="detailsUsedList" className="muted">-</p>
+            </div>
+          </div>
           <h4>Season Stats</h4>
           <table className="details-season-table">
             <thead>

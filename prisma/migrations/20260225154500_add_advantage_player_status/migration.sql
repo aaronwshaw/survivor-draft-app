@@ -1,0 +1,2 @@
+ALTER TABLE "AdvantagePlayer"
+ADD COLUMN "status" TEXT NOT NULL DEFAULT 'HOLDS';

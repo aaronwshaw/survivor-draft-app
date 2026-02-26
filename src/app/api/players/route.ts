@@ -40,6 +40,8 @@ export async function GET() {
       advantageLinks: {
         select: {
           advantageID: true,
+          status: true,
+          advantage: { select: { name: true } },
         },
       },
       seasonsPlayed: {
@@ -79,7 +81,11 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
-        advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
+        advantages: (player.advantageLinks || []).map((entry) => ({
+          advantageID: entry.advantageID,
+          status: entry.status,
+          name: entry.advantage?.name || "",
+        })),
         seasons: relationalSeasons,
       };
     }
@@ -93,7 +99,11 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
-        advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
+        advantages: (player.advantageLinks || []).map((entry) => ({
+          advantageID: entry.advantageID,
+          status: entry.status,
+          name: entry.advantage?.name || "",
+        })),
         seasons,
       };
     }
@@ -106,7 +116,11 @@ export async function GET() {
       age: player.age,
       tribe: player.tribe,
       eliminated: player.eliminated,
-      advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
+      advantages: (player.advantageLinks || []).map((entry) => ({
+        advantageID: entry.advantageID,
+        status: entry.status,
+        name: entry.advantage?.name || "",
+      })),
       seasons: Array.isArray(fallback?.seasons) ? fallback.seasons : [],
     };
   });

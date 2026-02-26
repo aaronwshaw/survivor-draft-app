@@ -122,6 +122,7 @@ model Advantage {
 model AdvantagePlayer {
   advantageID String
   playerId    String
+  status      String   @default("HOLDS")
   createdAt   DateTime @default(now())
 
   advantage   Advantage @relation(fields: [advantageID], references: [advantageID], onDelete: Cascade)

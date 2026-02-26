@@ -50,14 +50,24 @@ export async function GET(request: Request) {
         tribe: true,
         eliminated: true,
         seasons: true,
-        advantageLinks: { select: { advantageID: true } },
+        advantageLinks: {
+          select: {
+            advantageID: true,
+            status: true,
+            advantage: { select: { name: true } },
+          },
+        },
       },
     }),
   ]);
 
   const playersWithAdvantages = players.map((player) => ({
     ...player,
-    advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
+    advantages: (player.advantageLinks || []).map((entry) => ({
+      advantageID: entry.advantageID,
+      status: entry.status,
+      name: entry.advantage?.name || "",
+    })),
   }));
 
   return NextResponse.json({ tribes, advantages, players: playersWithAdvantages });

@@ -560,7 +560,7 @@ select {
 }
 
 .players-grid.list-mode .card-actions {
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 @media (min-width: 769px) {
@@ -1010,6 +1010,66 @@ button:hover {
 
 .details-controls-row .modal-actions {
   margin-top: 0;
+}
+
+.advantage-status-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.advantage-status-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.advantage-status-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.advantage-status-controls {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.advantage-status-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.player-advantage-summary {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.player-advantage-col {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.4rem 0.45rem;
+  background: #faf7f2;
+}
+
+.player-advantage-col h5 {
+  margin: 0 0 0.2rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.player-advantage-col p {
+  margin: 0;
+  font-size: 0.82rem;
 }
 
 .team-photo {
