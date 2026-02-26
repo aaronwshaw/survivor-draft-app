@@ -1072,6 +1072,14 @@ button:hover {
   font-size: 0.82rem;
 }
 
+.details-adv-list {
+  margin: 0;
+  padding-left: 1rem;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.82rem;
+}
+
 .team-photo {
   width: 100%;
   aspect-ratio: 3 / 4;

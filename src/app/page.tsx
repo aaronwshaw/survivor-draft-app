@@ -439,11 +439,15 @@ export default function Home() {
           <div className="player-advantage-summary">
             <div className="player-advantage-col">
               <h5>Holds</h5>
-              <p id="detailsHoldsList" className="muted">-</p>
+              <ul id="detailsHoldsList" className="muted details-adv-list">
+                <li>-</li>
+              </ul>
             </div>
             <div className="player-advantage-col">
               <h5>Used</h5>
-              <p id="detailsUsedList" className="muted">-</p>
+              <ul id="detailsUsedList" className="muted details-adv-list">
+                <li>-</li>
+              </ul>
             </div>
           </div>
           <h4>Season Stats</h4>

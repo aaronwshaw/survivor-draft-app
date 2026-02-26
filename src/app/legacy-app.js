@@ -910,8 +910,34 @@ function openDetails(leagueId, playerId) {
   ui.detailsName.textContent = p.name;
   ui.detailsAge.textContent = p.age ?? "Unknown";
   ui.detailsTribe.textContent = tribe?.name || "Unknown";
-  if (ui.detailsHoldsList) ui.detailsHoldsList.textContent = holds.length ? holds.join(", ") : "-";
-  if (ui.detailsUsedList) ui.detailsUsedList.textContent = used.length ? used.join(", ") : "-";
+  if (ui.detailsHoldsList) {
+    ui.detailsHoldsList.innerHTML = "";
+    if (!holds.length) {
+      const li = document.createElement("li");
+      li.textContent = "-";
+      ui.detailsHoldsList.appendChild(li);
+    } else {
+      holds.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        ui.detailsHoldsList.appendChild(li);
+      });
+    }
+  }
+  if (ui.detailsUsedList) {
+    ui.detailsUsedList.innerHTML = "";
+    if (!used.length) {
+      const li = document.createElement("li");
+      li.textContent = "-";
+      ui.detailsUsedList.appendChild(li);
+    } else {
+      used.forEach((name) => {
+        const li = document.createElement("li");
+        li.textContent = name;
+        ui.detailsUsedList.appendChild(li);
+      });
+    }
+  }
   applyTribeBorder(ui.detailsPhoto, tribe);
   seasonStatsBody.innerHTML = "";
   overallStatsRow.innerHTML = "";
