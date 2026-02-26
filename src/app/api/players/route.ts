@@ -37,6 +37,11 @@ export async function GET() {
       tribe: true,
       eliminated: true,
       seasons: true,
+      advantageLinks: {
+        select: {
+          advantageID: true,
+        },
+      },
       seasonsPlayed: {
         orderBy: [{ seasonNumber: "asc" }, { seasonLabel: "asc" }],
         select: {
@@ -74,6 +79,7 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
+        advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
         seasons: relationalSeasons,
       };
     }
@@ -87,6 +93,7 @@ export async function GET() {
         age: player.age,
         tribe: player.tribe,
         eliminated: player.eliminated,
+        advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
         seasons,
       };
     }
@@ -99,6 +106,7 @@ export async function GET() {
       age: player.age,
       tribe: player.tribe,
       eliminated: player.eliminated,
+      advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
       seasons: Array.isArray(fallback?.seasons) ? fallback.seasons : [],
     };
   });

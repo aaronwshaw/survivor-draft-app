@@ -188,33 +188,52 @@ export default function Home() {
           <section id="survivorManagementView" className="card view-hidden" aria-label="Survivor management">
             <h3>Survivor Management</h3>
             <p className="muted">Owner-only: manage tribes and elimination globally across all leagues.</p>
-            <section className="tribe-management card">
-              <h4>Tribe Management</h4>
-              <div id="tribeManagementList" className="tribe-management-list" />
-              <div className="tribe-management-create">
-                <label>
-                  New Tribe Name
-                  <input id="newGlobalTribeName" type="text" placeholder="Create new tribe" />
-                </label>
-                <label>
-                  Color
-                  <select id="newGlobalTribeColor">
-                    <option value="#e53935">Red</option>
-                    <option value="#1e88e5">Blue</option>
-                    <option value="#43a047">Green</option>
-                    <option value="#fbc02d">Yellow</option>
-                    <option value="#8e24aa">Purple</option>
-                    <option value="#ec407a">Pink</option>
-                    <option value="#fb8c00">Orange</option>
-                    <option value="#00897b">Teal</option>
-                    <option value="#6d4c41">Brown</option>
-                  </select>
-                </label>
-                <button id="createGlobalTribeButton" type="button" className="secondary">
-                  Create Tribe
-                </button>
-              </div>
-            </section>
+            <div className="survivor-config-grid">
+              <section className="tribe-management card">
+                <h4>Tribe Management</h4>
+                <div id="tribeManagementList" className="tribe-management-list" />
+                <div className="tribe-management-create">
+                  <label>
+                    New Tribe Name
+                    <input id="newGlobalTribeName" type="text" placeholder="Create new tribe" />
+                  </label>
+                  <label>
+                    Color
+                    <select id="newGlobalTribeColor">
+                      <option value="#e53935">Red</option>
+                      <option value="#1e88e5">Blue</option>
+                      <option value="#43a047">Green</option>
+                      <option value="#fbc02d">Yellow</option>
+                      <option value="#8e24aa">Purple</option>
+                      <option value="#ec407a">Pink</option>
+                      <option value="#fb8c00">Orange</option>
+                      <option value="#00897b">Teal</option>
+                      <option value="#6d4c41">Brown</option>
+                    </select>
+                  </label>
+                  <button id="createGlobalTribeButton" type="button" className="secondary">
+                    Create Tribe
+                  </button>
+                </div>
+              </section>
+              <section className="tribe-management card">
+                <h4>Advantage Management</h4>
+                <div id="advantageManagementList" className="tribe-management-list" />
+                <div className="tribe-management-create">
+                  <label>
+                    Advantage Name
+                    <input id="newGlobalAdvantageName" type="text" placeholder="Create new advantage" />
+                  </label>
+                  <label>
+                    Description
+                    <input id="newGlobalAdvantageDescription" type="text" placeholder="Advantage description" />
+                  </label>
+                  <button id="createGlobalAdvantageButton" type="button" className="secondary">
+                    Create Advantage
+                  </button>
+                </div>
+              </section>
+            </div>
             <h4>Players</h4>
             <div id="survivorPlayersGrid" className="players-grid" />
           </section>
@@ -378,6 +397,24 @@ export default function Home() {
                   </label>
                   <button id="saveTribeButton" type="button" className="secondary">
                     Save Tribe
+                  </button>
+                </div>
+              </div>
+            </section>
+            <section id="advantageAssignSection" className="view-hidden">
+              <button id="advantageAssignToggle" type="button" className="secondary">
+                Advantage Assignment
+              </button>
+              <div id="advantageAssignPanel" className="tribe-assign-panel view-hidden">
+                <div className="form-grid">
+                  <label>
+                    Advantage
+                    <select id="advantageSelect" multiple size={6}>
+                      <option value="">None</option>
+                    </select>
+                  </label>
+                  <button id="saveAdvantageButton" type="button" className="secondary">
+                    Save Advantage
                   </button>
                 </div>
               </div>

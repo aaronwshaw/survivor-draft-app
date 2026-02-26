@@ -8,6 +8,13 @@ type TribeLookup = {
     select: { id: true; name: true; color: true };
   }) => Promise<TribeRow[]>;
 };
+type AdvantageRow = { advantageID: string; name: string; description: string };
+type AdvantageLookup = {
+  findMany: (args: {
+    orderBy: { name: "asc" };
+    select: { advantageID: true; name: true; description: true };
+  }) => Promise<AdvantageRow[]>;
+};
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -24,16 +31,34 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Only owners can manage survivor data." }, { status: 403 });
   }
 
-  const [tribes, players] = await Promise.all([
+  const [tribes, advantages, players] = await Promise.all([
     (prisma as unknown as { tribe: TribeLookup }).tribe.findMany({
       orderBy: { name: "asc" },
       select: { id: true, name: true, color: true },
     }),
+    (prisma as unknown as { advantage: AdvantageLookup }).advantage.findMany({
+      orderBy: { name: "asc" },
+      select: { advantageID: true, name: true, description: true },
+    }),
     prisma.player.findMany({
       orderBy: { name: "asc" },
-      select: { id: true, name: true, photoUrl: true, age: true, tribe: true, eliminated: true, seasons: true },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        age: true,
+        tribe: true,
+        eliminated: true,
+        seasons: true,
+        advantageLinks: { select: { advantageID: true } },
+      },
     }),
   ]);
 
-  return NextResponse.json({ tribes, players });
+  const playersWithAdvantages = players.map((player) => ({
+    ...player,
+    advantages: (player.advantageLinks || []).map((entry) => entry.advantageID),
+  }));
+
+  return NextResponse.json({ tribes, advantages, players: playersWithAdvantages });
 }

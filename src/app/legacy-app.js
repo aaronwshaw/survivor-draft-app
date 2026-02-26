@@ -110,9 +110,13 @@ const ui = {
   yourTeamView: document.getElementById("yourTeamView"),
   survivorManagementView: document.getElementById("survivorManagementView"),
   tribeManagementList: document.getElementById("tribeManagementList"),
+  advantageManagementList: document.getElementById("advantageManagementList"),
   newGlobalTribeName: document.getElementById("newGlobalTribeName"),
   newGlobalTribeColor: document.getElementById("newGlobalTribeColor"),
   createGlobalTribeButton: document.getElementById("createGlobalTribeButton"),
+  newGlobalAdvantageName: document.getElementById("newGlobalAdvantageName"),
+  newGlobalAdvantageDescription: document.getElementById("newGlobalAdvantageDescription"),
+  createGlobalAdvantageButton: document.getElementById("createGlobalAdvantageButton"),
   survivorPlayersGrid: document.getElementById("survivorPlayersGrid"),
   yourTeamNameDisplay: document.getElementById("yourTeamNameDisplay"),
   yourTeamNameInput: document.getElementById("yourTeamNameInput"),
@@ -146,9 +150,14 @@ const ui = {
   tribeAssignToggle: document.getElementById("tribeAssignToggle"),
   tribeAssignPanel: document.getElementById("tribeAssignPanel"),
   tribeSelect: document.getElementById("tribeSelect"),
+  advantageAssignSection: document.getElementById("advantageAssignSection"),
+  advantageAssignToggle: document.getElementById("advantageAssignToggle"),
+  advantageAssignPanel: document.getElementById("advantageAssignPanel"),
+  advantageSelect: document.getElementById("advantageSelect"),
   newTribeName: document.getElementById("newTribeName"),
   tribeColorSelect: document.getElementById("tribeColorSelect"),
   saveTribeButton: document.getElementById("saveTribeButton"),
+  saveAdvantageButton: document.getElementById("saveAdvantageButton"),
   detailsAssignButton: document.getElementById("detailsAssignButton"),
   detailsClaimButton: document.getElementById("detailsClaimButton"),
   detailsEliminateButton: document.getElementById("detailsEliminateButton"),
@@ -163,7 +172,7 @@ function nowIso() { return new Date().toISOString(); }
 function email(v) { return String(v || "").trim().toLowerCase(); }
 function code(v) { return String(v || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
 function normalizeName(v) { return String(v || "").trim().toLowerCase(); }
-const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [] };
+const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [], advantages: [] };
 
 function isMobileLayout() {
   return typeof window !== "undefined" && window.innerWidth <= 768;
@@ -391,6 +400,7 @@ async function syncDb() {
     memberships: result.memberships || [],
     draftStates: result.draftStates || [],
     tribes: result.tribes || [],
+    advantages: result.advantages || [],
   };
   state.players = await loadPlayers();
   saveDb();
@@ -580,7 +590,7 @@ async function persistPlayerAssignment(ctx, playerId, teamIdOrNull) {
   });
 }
 
-async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated) {
+async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated, advantages) {
   return apiJson("/api/legacy/survivor/player", {
     method: "POST",
     body: JSON.stringify({
@@ -588,6 +598,7 @@ async function persistSurvivorPlayer(ctx, playerId, tribeId, eliminated) {
       playerId,
       tribeId,
       eliminated,
+      advantages,
     }),
   });
 }
@@ -672,9 +683,9 @@ function nextEliminationNumber() {
   return nums.length === 0 ? 1 : Math.max(...nums) + 1;
 }
 
-async function updatePlayerSurvivorState(ctx, playerId, nextTribeId, nextEliminated) {
+async function updatePlayerSurvivorState(ctx, playerId, nextTribeId, nextEliminated, nextAdvantages) {
   if (!ctx.user.isOwner) throw new Error("Only owners can manage survivor data.");
-  await persistSurvivorPlayer(ctx, playerId, nextTribeId || null, nextEliminated || null);
+  await persistSurvivorPlayer(ctx, playerId, nextTribeId || null, nextEliminated || null, nextAdvantages || []);
   await syncDb();
 }
 
@@ -842,6 +853,7 @@ function openDetails(leagueId, playerId) {
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
   const detailsAssignButton = ui.detailsAssignButton || document.getElementById("detailsAssignButton");
   const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
+  const assignedAdvantages = Array.isArray(p.advantages) ? p.advantages : [];
   if (!seasonStatsBody || !overallStatsRow) return;
   const overallTable = overallStatsRow.closest("table");
   if (overallTable) {
@@ -908,6 +920,7 @@ function openDetails(leagueId, playerId) {
     overallStatsRow.appendChild(td);
   });
   ui.tribeAssignSection.classList.toggle("view-hidden", !canManage);
+  ui.advantageAssignSection.classList.toggle("view-hidden", !canManage);
   ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
   if (detailsAssignButton) {
     const showAssign = ctx.membership.role === "admin";
@@ -938,6 +951,17 @@ function openDetails(leagueId, playerId) {
       ui.tribeSelect.appendChild(opt);
     });
     ui.tribeSelect.value = tribe?.id || "";
+    ui.advantageAssignPanel.classList.add("view-hidden");
+    ui.advantageSelect.innerHTML = "";
+    (state.db.advantages || []).forEach((adv) => {
+      const opt = document.createElement("option");
+      opt.value = adv.advantageID;
+      opt.textContent = `${adv.name} - ${adv.description}`;
+      ui.advantageSelect.appendChild(opt);
+    });
+    Array.from(ui.advantageSelect.options).forEach((option) => {
+      option.selected = assignedAdvantages.includes(option.value);
+    });
   }
   updateEliminateButton(ctx, playerId);
   ui.detailsModal.classList.remove("hidden");
@@ -1103,6 +1127,18 @@ function orderedTeamsForTeamsView(ctx) {
     if (aMin !== bMin) return aMin - bMin;
     if (a.slotNumber !== b.slotNumber) return a.slotNumber - b.slotNumber;
     return a.name.localeCompare(b.name);
+  });
+}
+
+async function persistSurvivorAdvantage(ctx, advantageID, name, description) {
+  return apiJson("/api/legacy/survivor/advantages", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      advantageID,
+      name,
+      description,
+    }),
   });
 }
 
@@ -1340,6 +1376,7 @@ function renderSurvivorManagement(ctx) {
   if (!ctx.user.isOwner) {
     ui.survivorPlayersGrid.innerHTML = "";
     ui.tribeManagementList.innerHTML = "";
+    ui.advantageManagementList.innerHTML = "";
     return;
   }
 
@@ -1372,6 +1409,37 @@ function renderSurvivorManagement(ctx) {
     row.appendChild(colorInput);
     row.appendChild(saveButton);
     ui.tribeManagementList.appendChild(row);
+  });
+
+  ui.advantageManagementList.innerHTML = "";
+  (state.db.advantages || []).forEach((advantage) => {
+    const row = document.createElement("div");
+    row.className = "tribe-management-row";
+    const nameInput = document.createElement("input");
+    nameInput.type = "text";
+    nameInput.value = advantage.name;
+    const descriptionInput = document.createElement("input");
+    descriptionInput.type = "text";
+    descriptionInput.value = advantage.description || "";
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className = "secondary";
+    saveButton.textContent = "Save";
+    saveButton.addEventListener("click", async () => {
+      try {
+        await persistSurvivorAdvantage(ctx, advantage.advantageID, nameInput.value, descriptionInput.value);
+        await syncDb();
+        msg("league", "Advantage updated.");
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+    row.appendChild(nameInput);
+    row.appendChild(descriptionInput);
+    row.appendChild(saveButton);
+    ui.advantageManagementList.appendChild(row);
   });
 
   ui.survivorPlayersGrid.innerHTML = "";
@@ -2203,6 +2271,35 @@ function wire() {
       render();
     }
   });
+  if (ui.createGlobalAdvantageButton) {
+    ui.createGlobalAdvantageButton.addEventListener("click", async () => {
+      const r = route();
+      if (r.name !== "league") return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!ctx || !ctx.user.isOwner) return;
+      const name = String(ui.newGlobalAdvantageName.value || "").trim();
+      const description = String(ui.newGlobalAdvantageDescription.value || "").trim();
+      if (!name) {
+        msg("league", "Advantage name is required.");
+        return;
+      }
+      if (!description) {
+        msg("league", "Advantage description is required.");
+        return;
+      }
+      try {
+        await persistSurvivorAdvantage(ctx, "", name, description);
+        ui.newGlobalAdvantageName.value = "";
+        ui.newGlobalAdvantageDescription.value = "";
+        await syncDb();
+        msg("league", "Advantage created.");
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+  }
 
   ui.resetButton.addEventListener("click", async () => {
     const r = route();
@@ -2234,7 +2331,8 @@ function wire() {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       if (!player) return;
       const nextElim = Number(player.eliminated) > 0 ? null : nextEliminationNumber();
-      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, player.tribe || null, nextElim);
+      const advantages = Array.isArray(player.advantages) ? player.advantages : [];
+      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, player.tribe || null, nextElim, advantages);
       msg("", "");
       render();
       updateEliminateButton(ctxForLeague(r.leagueId), state.detailsTargetPlayerId);
@@ -2274,6 +2372,11 @@ function wire() {
   ui.tribeAssignToggle.addEventListener("click", () => {
     ui.tribeAssignPanel.classList.toggle("view-hidden");
   });
+  if (ui.advantageAssignToggle) {
+    ui.advantageAssignToggle.addEventListener("click", () => {
+      ui.advantageAssignPanel.classList.toggle("view-hidden");
+    });
+  }
   ui.saveTribeButton.addEventListener("click", async () => {
     const r = route();
     if (r.name !== "league" || !state.detailsTargetPlayerId) return;
@@ -2283,7 +2386,8 @@ function wire() {
     try {
       const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
       const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
-      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, selectedTribeId || null, eliminated);
+      const advantages = Array.isArray(player?.advantages) ? player.advantages : [];
+      await updatePlayerSurvivorState(ctx, state.detailsTargetPlayerId, selectedTribeId || null, eliminated, advantages);
       ui.tribeAssignPanel.classList.add("view-hidden");
       msg("league", "Tribe assignment saved.");
       render();
@@ -2293,6 +2397,36 @@ function wire() {
       render();
     }
   });
+  if (ui.saveAdvantageButton) {
+    ui.saveAdvantageButton.addEventListener("click", async () => {
+      const r = route();
+      if (r.name !== "league" || !state.detailsTargetPlayerId) return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!canManageSurvivor(ctx)) return;
+      const selectedAdvantageIds = Array.from(ui.advantageSelect.selectedOptions)
+        .map((option) => option.value)
+        .filter(Boolean);
+      try {
+        const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
+        const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
+        const advantages = selectedAdvantageIds;
+        await updatePlayerSurvivorState(
+          ctx,
+          state.detailsTargetPlayerId,
+          player?.tribe || null,
+          eliminated,
+          advantages,
+        );
+        ui.advantageAssignPanel.classList.add("view-hidden");
+        msg("league", "Advantage assignment saved.");
+        render();
+        openDetails(r.leagueId, state.detailsTargetPlayerId);
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      }
+    });
+  }
 }
 
 async function init() {
