@@ -804,6 +804,19 @@ function eliminationBadge(player) {
   return b;
 }
 
+function advantageBadge(player) {
+  const assignments = normalizeAdvantageAssignments(player?.advantages);
+  const held = assignments.filter((entry) => entry.status === "HOLDS");
+  if (!held.length) return null;
+  const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
+  const names = held.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+  const b = document.createElement("span");
+  b.className = "advantage-badge";
+  b.textContent = "A";
+  b.title = names.join(", ");
+  return b;
+}
+
 function openAssign(leagueId, playerId) {
   const ctx = ctxForLeague(leagueId);
   if (!ctx) return;
@@ -1085,6 +1098,8 @@ function playerCard(ctx, p) {
   img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const aBadge = advantageBadge(p);
+  if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(p);
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);
@@ -1148,6 +1163,8 @@ function allPlayersCard(ctx, player) {
   img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const aBadge = advantageBadge(player);
+  if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(player);
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);
@@ -1226,6 +1243,8 @@ function teamColumn(ctx, team) {
     img.addEventListener("click", () => openDetails(ctx.league.id, p.id));
     applyTribeBorder(img, tribeForPlayer(p));
     wrap.appendChild(img);
+    const aBadge = advantageBadge(p);
+    if (aBadge) wrap.appendChild(aBadge);
     const badge = eliminationBadge(p);
     if (badge) wrap.appendChild(badge);
     f.appendChild(wrap);
@@ -1324,6 +1343,8 @@ function teamDetailCard(ctx, player) {
   img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
+  const aBadge = advantageBadge(player);
+  if (aBadge) wrap.appendChild(aBadge);
   const badge = eliminationBadge(player);
   if (badge) wrap.appendChild(badge);
   card.appendChild(wrap);

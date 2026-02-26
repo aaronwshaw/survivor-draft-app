@@ -1099,6 +1099,23 @@ button:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
 }
 
+.advantage-badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #228b22;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
 .danger-button:disabled {
   background: #7f858e;
   cursor: not-allowed;
