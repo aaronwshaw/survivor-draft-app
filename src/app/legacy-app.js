@@ -143,6 +143,7 @@ const ui = {
   detailsPhoto: document.getElementById("detailsPhoto"),
   detailsName: document.getElementById("detailsName"),
   detailsAge: document.getElementById("detailsAge"),
+  detailsNoVoteBadge: document.getElementById("detailsNoVoteBadge"),
   detailsTribe: document.getElementById("detailsTribe"),
   detailsHoldsList: document.getElementById("detailsHoldsList"),
   detailsUsedList: document.getElementById("detailsUsedList"),
@@ -928,6 +929,9 @@ function openDetails(leagueId, playerId) {
   ui.detailsPhoto.alt = p.name;
   ui.detailsName.textContent = p.name;
   ui.detailsAge.textContent = p.age ?? "Unknown";
+  if (ui.detailsNoVoteBadge) {
+    ui.detailsNoVoteBadge.classList.toggle("view-hidden", p.vote !== false);
+  }
   ui.detailsTribe.textContent = tribe?.name || "Unknown";
   if (ui.detailsHoldsList) {
     ui.detailsHoldsList.innerHTML = "";

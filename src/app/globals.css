@@ -1012,6 +1012,32 @@ button:hover {
   margin-top: 0;
 }
 
+.details-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.details-meta-row p {
+  margin: 0;
+}
+
+.details-no-vote-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fb8c00;
+  color: #fb8c00;
+  background: #fff4e6;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
 .advantage-status-list {
   display: grid;
   gap: 0.35rem;

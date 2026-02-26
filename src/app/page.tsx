@@ -432,9 +432,12 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <p>
-            <strong>Age:</strong> <span id="detailsAge" />
-          </p>
+          <div className="details-meta-row">
+            <p>
+              <strong>Age:</strong> <span id="detailsAge" />
+            </p>
+            <span id="detailsNoVoteBadge" className="details-no-vote-badge view-hidden">No Vote</span>
+          </div>
           <p>
             <strong>Tribe:</strong> <span id="detailsTribe" />
           </p>
