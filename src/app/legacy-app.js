@@ -2197,7 +2197,6 @@ function renderLeague(leagueId) {
   }
   const allFilteredPlayers = sortEliminatedLast(sortDraftPlayers(
     state.players
-      .filter((p) => (Number(p?.eliminated) || 0) === 0)
       .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
   ));
   if (allFilteredPlayers.length === 0) {
