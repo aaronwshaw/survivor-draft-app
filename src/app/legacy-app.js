@@ -1124,6 +1124,11 @@ function closeDetails() {
   ui.detailsModal.classList.add("hidden");
 }
 
+function teamOwnerDisplayName(team) {
+  if (!team?.ownerUserId) return "Unclaimed";
+  return (state.db.users.find((u) => u.id === team.ownerUserId) || {}).displayName || "Unknown";
+}
+
 function teamCard(ctx, team) {
   const card = document.createElement("article");
   card.className = "team-card";
@@ -1133,7 +1138,7 @@ function teamCard(ctx, team) {
   card.appendChild(title);
   const owner = document.createElement("p");
   owner.className = "muted";
-  owner.textContent = team.ownerUserId ? `Owner: ${(state.db.users.find((u) => u.id === team.ownerUserId) || {}).displayName || "Unknown"}` : "Owner: Unclaimed";
+  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
   card.appendChild(owner);
   const ul = document.createElement("ul");
   ul.className = "roster-list";
@@ -1350,6 +1355,10 @@ function teamColumn(ctx, team) {
   const h = document.createElement("h3");
   h.textContent = team.name;
   col.appendChild(h);
+  const owner = document.createElement("p");
+  owner.className = "muted";
+  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
+  col.appendChild(owner);
   const grid = document.createElement("div");
   grid.className = "team-column-photos";
   const players = playersForTeam(ctx, team.id);
@@ -1410,6 +1419,10 @@ function teamListCard(ctx, team) {
   const title = document.createElement("h4");
   title.textContent = team.name;
   card.appendChild(title);
+  const owner = document.createElement("p");
+  owner.className = "muted";
+  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
+  card.appendChild(owner);
 
   const names = playersForTeam(ctx, team.id);
   const roster = document.createElement("ul");
@@ -1549,8 +1562,12 @@ function renderTeamsSubview(ctx) {
   });
   const title = document.createElement("h4");
   title.textContent = team.name;
+  const owner = document.createElement("p");
+  owner.className = "muted";
+  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
   header.appendChild(back);
   header.appendChild(title);
+  header.appendChild(owner);
   ui.teamColumnsContainer.appendChild(header);
 
   const grid = document.createElement("div");
