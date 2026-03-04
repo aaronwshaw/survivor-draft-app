@@ -1305,6 +1305,21 @@ function allPlayersCard(ctx, player) {
   }
   h.appendChild(inlineBadges);
   card.appendChild(h);
+  const ownerTeamId = ctx?.draft?.assignmentByPlayerId?.[player.id] || null;
+  if (ownerTeamId) {
+    const ownerTeam = ctx.teams.find((team) => team.id === ownerTeamId);
+    if (ownerTeam) {
+      const ownerName = teamOwnerDisplayName(ownerTeam);
+      const ownerTag = document.createElement("span");
+      ownerTag.className = "player-owner-tag";
+      ownerTag.textContent = ownerName;
+      wrap.appendChild(ownerTag);
+      const ownerTagInline = document.createElement("span");
+      ownerTagInline.className = "player-owner-tag-inline";
+      ownerTagInline.textContent = ownerName;
+      card.appendChild(ownerTagInline);
+    }
+  }
   const actions = document.createElement("div");
   actions.className = "card-actions";
   const d = document.createElement("button");

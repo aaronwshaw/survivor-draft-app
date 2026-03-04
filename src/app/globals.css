@@ -690,6 +690,43 @@ select {
   font-size: 0.9rem;
 }
 
+.player-owner-tag {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  max-width: calc(100% - 12px);
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: rgba(20, 24, 30, 0.78);
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-owner-tag-inline {
+  display: none;
+}
+
+.players-grid.list-mode .player-owner-tag-inline {
+  display: inline-block;
+  justify-self: start;
+  margin-top: 0.1rem;
+  padding: 0.16rem 0.46rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: #f4f1eb;
+  color: #4a4f57;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 .card-actions {
   display: flex;
   gap: 0.4rem;
