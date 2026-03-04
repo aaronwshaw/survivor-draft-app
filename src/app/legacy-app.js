@@ -2675,8 +2675,9 @@ function wire() {
       if (r.name !== "league" || !state.detailsTargetPlayerId) return;
       const ctx = ctxForLeague(r.leagueId);
       if (!ctx || ctx.membership.role !== "admin") return;
+      const targetPlayerId = state.detailsTargetPlayerId;
       closeDetails();
-      openAssign(r.leagueId, state.detailsTargetPlayerId);
+      openAssign(r.leagueId, targetPlayerId);
     });
   }
   if (ui.detailsVoteButton) {
