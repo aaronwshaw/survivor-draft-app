@@ -1137,8 +1137,8 @@ function teamCard(ctx, team) {
   title.textContent = team.name;
   card.appendChild(title);
   const owner = document.createElement("p");
-  owner.className = "muted";
-  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
+  owner.className = "muted team-owner-name";
+  owner.textContent = teamOwnerDisplayName(team);
   card.appendChild(owner);
   const ul = document.createElement("ul");
   ul.className = "roster-list";
@@ -1352,13 +1352,16 @@ async function persistSurvivorAdvantage(ctx, advantageID, name, description) {
 function teamColumn(ctx, team) {
   const col = document.createElement("article");
   col.className = "team-column";
+  const head = document.createElement("div");
+  head.className = "team-column-head";
   const h = document.createElement("h3");
   h.textContent = team.name;
-  col.appendChild(h);
+  head.appendChild(h);
   const owner = document.createElement("p");
-  owner.className = "muted";
-  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
-  col.appendChild(owner);
+  owner.className = "muted team-owner-name";
+  owner.textContent = teamOwnerDisplayName(team);
+  head.appendChild(owner);
+  col.appendChild(head);
   const grid = document.createElement("div");
   grid.className = "team-column-photos";
   const players = playersForTeam(ctx, team.id);
@@ -1420,8 +1423,8 @@ function teamListCard(ctx, team) {
   title.textContent = team.name;
   card.appendChild(title);
   const owner = document.createElement("p");
-  owner.className = "muted";
-  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
+  owner.className = "muted team-owner-name";
+  owner.textContent = teamOwnerDisplayName(team);
   card.appendChild(owner);
 
   const names = playersForTeam(ctx, team.id);
@@ -1563,8 +1566,8 @@ function renderTeamsSubview(ctx) {
   const title = document.createElement("h4");
   title.textContent = team.name;
   const owner = document.createElement("p");
-  owner.className = "muted";
-  owner.textContent = `Owner: ${teamOwnerDisplayName(team)}`;
+  owner.className = "muted team-owner-name";
+  owner.textContent = teamOwnerDisplayName(team);
   header.appendChild(back);
   header.appendChild(title);
   header.appendChild(owner);
