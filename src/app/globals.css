@@ -1344,6 +1344,36 @@ button:hover {
   font-weight: 700;
 }
 
+.chat-messages {
+  margin-top: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 0.55rem 0.6rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.chat-message-row {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.chat-form {
+  margin-top: 0.6rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.45rem;
+}
+
+.chat-form input {
+  min-width: 0;
+}
+
 @media (max-width: 768px) {
   .landing-stage {
     min-height: 0;

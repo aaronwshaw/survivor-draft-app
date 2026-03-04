@@ -36,6 +36,9 @@ export default function Home() {
               <button id="teamsViewButton" className="secondary" type="button">
                 Teams
               </button>
+              <button id="chatViewButton" className="secondary" type="button">
+                Chat
+              </button>
             </div>
             <button id="resetButton" className="danger-button" type="button">
               Reset League
@@ -358,6 +361,17 @@ export default function Home() {
             <div className="teams-columns-scroll">
               <div id="teamColumnsContainer" className="team-columns-grid" />
             </div>
+          </section>
+
+          <section id="chatView" className="card view-hidden" aria-labelledby="chatTitle">
+            <h3 id="chatTitle">League Chat</h3>
+            <div id="chatMessages" className="chat-messages" />
+            <form id="chatForm" className="chat-form">
+              <input id="chatInput" type="text" maxLength={280} placeholder="Type a message..." />
+              <button id="chatSendButton" type="submit">
+                Send
+              </button>
+            </form>
           </section>
         </section>
       </main>

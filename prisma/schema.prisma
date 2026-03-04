@@ -29,6 +29,7 @@ model User {
   memberships  Membership[]
   ownedLeagues League[]     @relation("LeagueOwner")
   ownedTeams   Team[]       @relation("TeamOwner")
+  chatMessages ChatMessage[]
 }
 
 model League {
@@ -43,6 +44,7 @@ model League {
   teams       Team[]
   memberships Membership[]
   draftState  DraftState?
+  chatMessages ChatMessage[]
 }
 
 model Team {
@@ -157,4 +159,17 @@ model PlayerSeason {
   player       Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
 
   @@unique([playerId, seasonLabel])
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  leagueId  String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  league League @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([leagueId, createdAt])
 }

@@ -103,12 +103,14 @@ const ui = {
   draftViewButton: document.getElementById("draftViewButton"),
   allPlayersViewButton: document.getElementById("allPlayersViewButton"),
   teamsViewButton: document.getElementById("teamsViewButton"),
+  chatViewButton: document.getElementById("chatViewButton"),
   yourTeamViewButton: document.getElementById("yourTeamViewButton"),
   survivorMgmtViewButton: document.getElementById("survivorMgmtViewButton"),
   resetButton: document.getElementById("resetButton"),
   draftLayout: document.getElementById("draftLayout"),
   allPlayersView: document.getElementById("allPlayersView"),
   teamsColumnsView: document.getElementById("teamsColumnsView"),
+  chatView: document.getElementById("chatView"),
   yourTeamView: document.getElementById("yourTeamView"),
   survivorManagementView: document.getElementById("survivorManagementView"),
   tribeManagementList: document.getElementById("tribeManagementList"),
@@ -136,6 +138,10 @@ const ui = {
   playerPoolViewToggle: document.getElementById("playerPoolViewToggle"),
   allPlayersPoolViewToggle: document.getElementById("allPlayersPoolViewToggle"),
   teamColumnsContainer: document.getElementById("teamColumnsContainer"),
+  chatMessages: document.getElementById("chatMessages"),
+  chatForm: document.getElementById("chatForm"),
+  chatInput: document.getElementById("chatInput"),
+  chatSendButton: document.getElementById("chatSendButton"),
   assignModal: document.getElementById("assignModal"),
   assignPlayerName: document.getElementById("assignPlayerName"),
   assignSelect: document.getElementById("assignSelect"),
@@ -193,7 +199,7 @@ function normalizeAdvantageAssignments(rawAdvantages) {
     })
     .filter(Boolean);
 }
-const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [], advantages: [] };
+const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [], advantages: [], chatMessages: [] };
 
 function isMobileLayout() {
   return typeof window !== "undefined" && window.innerWidth <= 768;
@@ -438,6 +444,7 @@ async function syncDb() {
     draftStates: result.draftStates || [],
     tribes: result.tribes || [],
     advantages: result.advantages || [],
+    chatMessages: result.chatMessages || [],
   };
   state.players = await loadPlayers();
   saveDb();
@@ -665,6 +672,17 @@ async function persistDraftConfig(ctx, action, extra = {}) {
   });
 }
 
+async function persistChatMessage(ctx, text) {
+  return apiJson("/api/legacy/chat", {
+    method: "POST",
+    body: JSON.stringify({
+      userId: ctx.user.id,
+      leagueId: ctx.league.id,
+      text,
+    }),
+  });
+}
+
 async function assignPlayer(ctx, playerId, teamIdOrNull) {
   const draft = ensureDraftConfig(ctx);
   const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
@@ -777,19 +795,22 @@ function updateDraftSubview() {
   const isDraft = state.currentSubview === "draft";
   const isAllPlayers = state.currentSubview === "allplayers";
   const isTeams = state.currentSubview === "teams";
+  const isChat = state.currentSubview === "chat";
   const isOrder = state.currentSubview === "order";
   const isYourTeam = state.currentSubview === "yourteam";
   const isSurvivor = state.currentSubview === "survivor";
   ui.draftLayout.classList.toggle("view-hidden", !isDraft);
   ui.allPlayersView.classList.toggle("view-hidden", !isAllPlayers);
   ui.teamsColumnsView.classList.toggle("view-hidden", !isTeams);
+  if (ui.chatView) ui.chatView.classList.toggle("view-hidden", !isChat);
   ui.leagueManagementView.classList.toggle("view-hidden", !isOrder);
   ui.yourTeamView.classList.toggle("view-hidden", !isYourTeam);
   ui.survivorManagementView.classList.toggle("view-hidden", !isSurvivor);
-  ui.leagueInfoCard.classList.toggle("view-hidden", !(isYourTeam || isOrder));
+  ui.leagueInfoCard.classList.toggle("view-hidden", !(isYourTeam || isOrder || isChat));
   ui.draftViewButton.classList.toggle("active-view", isDraft);
   ui.allPlayersViewButton.classList.toggle("active-view", isAllPlayers);
   ui.teamsViewButton.classList.toggle("active-view", isTeams);
+  if (ui.chatViewButton) ui.chatViewButton.classList.toggle("active-view", isChat);
   ui.draftOrderNavButton.classList.toggle("active-view", isOrder);
   ui.yourTeamViewButton.classList.toggle("active-view", isYourTeam);
   ui.survivorMgmtViewButton.classList.toggle("active-view", isSurvivor);
@@ -1639,6 +1660,38 @@ function renderYourTeamView(ctx) {
   players.forEach((player) => ui.yourTeamPlayers.appendChild(teamDetailCard(ctx, player)));
 }
 
+function renderChatView(ctx) {
+  if (!ui.chatMessages) return;
+  ui.chatMessages.innerHTML = "";
+  const messages = (state.db.chatMessages || [])
+    .filter((entry) => entry?.leagueId === ctx.league.id)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  if (!messages.length) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No messages yet.";
+    ui.chatMessages.appendChild(empty);
+    return;
+  }
+
+  messages.forEach((entry) => {
+    const row = document.createElement("p");
+    row.className = "chat-message-row";
+    const sender = state.db.users.find((u) => u.id === entry.userId);
+    const senderName = String(sender?.displayName || sender?.email || "Unknown");
+    const senderSpan = document.createElement("strong");
+    senderSpan.textContent = senderName;
+    const textSpan = document.createElement("span");
+    textSpan.textContent = `: ${String(entry.text || "")}`;
+    row.appendChild(senderSpan);
+    row.appendChild(textSpan);
+    ui.chatMessages.appendChild(row);
+  });
+
+  ui.chatMessages.scrollTop = ui.chatMessages.scrollHeight;
+}
+
 function renderSurvivorManagement(ctx) {
   if (!ctx.user.isOwner) {
     ui.survivorPlayersGrid.innerHTML = "";
@@ -2245,6 +2298,7 @@ function renderLeague(leagueId) {
   }
   renderTeamsSubview(ctx);
   renderYourTeamView(ctx);
+  renderChatView(ctx);
   renderSurvivorManagement(ctx);
   if (state.currentSubview === "draft" && state.pendingDraftScrollReset) {
     state.pendingDraftScrollReset = false;
@@ -2476,6 +2530,14 @@ function wire() {
     ui.topBarMenu.classList.remove("open");
     render();
   });
+  if (ui.chatViewButton) {
+    ui.chatViewButton.addEventListener("click", () => {
+      state.currentSubview = "chat";
+      state.isEditingTeamName = false;
+      ui.topBarMenu.classList.remove("open");
+      render();
+    });
+  }
   ui.yourTeamViewButton.addEventListener("click", () => {
     state.currentSubview = "yourteam";
     state.isEditingTeamName = false;
@@ -2494,6 +2556,31 @@ function wire() {
     ui.topBarMenu.classList.remove("open");
     render();
   });
+  if (ui.chatForm) {
+    ui.chatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const r = route();
+      if (r.name !== "league") return;
+      const ctx = ctxForLeague(r.leagueId);
+      if (!ctx || !ui.chatInput) return;
+      const text = String(ui.chatInput.value || "").trim();
+      if (!text) return;
+      try {
+        if (ui.chatSendButton) ui.chatSendButton.disabled = true;
+        await persistChatMessage(ctx, text);
+        ui.chatInput.value = "";
+        await syncDb();
+        state.currentSubview = "chat";
+        msg("league", "");
+        render();
+      } catch (err) {
+        msg("league", err.message);
+        render();
+      } finally {
+        if (ui.chatSendButton) ui.chatSendButton.disabled = false;
+      }
+    });
+  }
   ui.editTeamNameButton.addEventListener("click", () => {
     const r = route();
     if (r.name !== "league") return;

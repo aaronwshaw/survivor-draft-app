@@ -17,6 +17,14 @@ type AdvantageLookup = {
     select: { advantageID: true; name: true; description: true };
   }) => Promise<AdvantageRow[]>;
 };
+type ChatMessageRow = { id: string; leagueId: string; userId: string; text: string; createdAt: Date };
+type ChatMessageLookup = {
+  findMany: (args: {
+    where: { leagueId: { in: string[] } };
+    orderBy: { createdAt: "asc" };
+    select: { id: true; leagueId: true; userId: true; text: true; createdAt: true };
+  }) => Promise<ChatMessageRow[]>;
+};
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -31,7 +39,7 @@ export async function GET(request: Request) {
   });
   const leagueIds = memberships.map((m) => m.leagueId);
 
-  const [users, leagues, teams, allMemberships, draftStates, tribes, advantages] = await Promise.all([
+  const [users, leagues, teams, allMemberships, draftStates, tribes, advantages, chatMessages] = await Promise.all([
     prisma.user.findMany({
       select: { id: true, email: true, displayName: true, isOwner: true },
     }),
@@ -72,6 +80,11 @@ export async function GET(request: Request) {
       orderBy: { name: "asc" },
       select: { advantageID: true, name: true, description: true },
     }),
+    (prisma as unknown as { chatMessage: ChatMessageLookup }).chatMessage.findMany({
+      where: { leagueId: { in: leagueIds } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, leagueId: true, userId: true, text: true, createdAt: true },
+    }),
   ]);
 
   return NextResponse.json({
@@ -82,5 +95,6 @@ export async function GET(request: Request) {
     draftStates,
     tribes,
     advantages,
+    chatMessages,
   });
 }
