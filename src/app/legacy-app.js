@@ -2163,7 +2163,8 @@ function renderLeague(leagueId) {
 
   const isAdmin = ctx.membership.role === "admin";
   const isOwner = !!ctx.user.isOwner;
-  const allAssigned = state.players.length > 0 && state.players.every((player) => !!draft.assignmentByPlayerId[player.id]);
+  const activePlayers = state.players.filter((player) => (Number(player?.eliminated) || 0) === 0);
+  const allAssigned = activePlayers.length > 0 && activePlayers.every((player) => !!draft.assignmentByPlayerId[player.id]);
   if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
   if (!isOwner && state.currentSubview === "survivor") state.currentSubview = "draft";
   if (allAssigned && !isAdmin && state.currentSubview === "draft") state.currentSubview = "teams";
