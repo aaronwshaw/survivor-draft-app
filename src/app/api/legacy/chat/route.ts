@@ -34,7 +34,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You are not in this league." }, { status: 403 });
   }
 
-  const message = await (prisma as unknown as { chatMessage: ChatMessageCreateLookup }).chatMessage.create({
+  const chatClient = (prisma as unknown as { chatMessage?: ChatMessageCreateLookup }).chatMessage;
+  if (!chatClient?.create) {
+    return NextResponse.json({ error: "Chat is temporarily unavailable. Restart dev server and regenerate Prisma client." }, { status: 503 });
+  }
+
+  const message = await chatClient.create({
     data: { leagueId, userId, text },
     select: { id: true, leagueId: true, userId: true, text: true, createdAt: true },
   });

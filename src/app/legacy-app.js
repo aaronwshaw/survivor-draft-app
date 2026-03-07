@@ -437,24 +437,23 @@ async function loadPlayers() {
 
 async function syncDb() {
   const userId = state.session?.currentUserId;
-  if (!userId) {
-    state.db = EMPTY_DB;
-    saveDb();
-    return;
-  }
-  const result = await apiJson(`/api/legacy/sync?userId=${encodeURIComponent(userId)}&t=${Date.now()}`, {
+  const query = userId
+    ? `?userId=${encodeURIComponent(userId)}&t=${Date.now()}`
+    : `?t=${Date.now()}`;
+  const result = await apiJson(`/api/legacy/sync${query}`, {
     method: "GET",
     cache: "no-store",
   });
+  const hasUser = !!userId;
   state.db = {
-    users: result.users || [],
-    leagues: result.leagues || [],
-    teams: result.teams || [],
-    memberships: result.memberships || [],
-    draftStates: result.draftStates || [],
+    users: hasUser ? (result.users || []) : [],
+    leagues: hasUser ? (result.leagues || []) : [],
+    teams: hasUser ? (result.teams || []) : [],
+    memberships: hasUser ? (result.memberships || []) : [],
+    draftStates: hasUser ? (result.draftStates || []) : [],
     tribes: result.tribes || [],
     advantages: result.advantages || [],
-    chatMessages: result.chatMessages || [],
+    chatMessages: hasUser ? (result.chatMessages || []) : [],
   };
   state.players = await loadPlayers();
   saveDb();
@@ -1890,6 +1889,12 @@ function refreshPlayerPoolControls() {
   if (ui.globalPlayersPoolViewToggle) ui.globalPlayersPoolViewToggle.textContent = toggleLabel;
 }
 
+function ensurePlayerPoolShowPhotosDefault() {
+  if (state.playerPoolShowPhotos == null) {
+    state.playerPoolShowPhotos = !isMobileLayout();
+  }
+}
+
 function populatePlayerPoolTribeFilters() {
   const buildOptions = (selectEl) => {
     if (!selectEl) return;
@@ -1935,6 +1940,7 @@ function renderLeagues() {
 function renderGlobalPlayers() {
   toggleView("players");
   if (!ui.globalPlayersContainer) return;
+  ensurePlayerPoolShowPhotosDefault();
   ui.globalPlayersContainer.innerHTML = "";
   populatePlayerPoolTribeFilters();
   if (state.tribeFilter !== "all" && !(state.db.tribes || []).some((t) => t.id === state.tribeFilter)) {
@@ -2269,9 +2275,7 @@ function renderDraftOrderCard(ctx, draft) {
 function renderLeague(leagueId) {
   const ctx = ctxForLeague(leagueId);
   if (!ctx) { msg("leagues", "League not found or access denied."); go("#/leagues"); return; }
-  if (state.playerPoolShowPhotos == null) {
-    state.playerPoolShowPhotos = !isMobileLayout();
-  }
+  ensurePlayerPoolShowPhotosDefault();
   const draft = ensureDraftConfig(ctx);
   toggleView("league");
   ui.leagueTitle.textContent = ctx.league.name;

@@ -564,7 +564,8 @@ select {
 }
 
 @media (min-width: 769px) {
-  #allPlayersContainer.players-grid.list-mode {
+  #allPlayersContainer.players-grid.list-mode,
+  #globalPlayersContainer.players-grid.list-mode {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 

@@ -27,38 +27,74 @@ export async function GET() {
     (Array.isArray(fallbackPlayers) ? fallbackPlayers : []).map((p) => [normalizeName(p.name), p]),
   );
 
-  const players = await prisma.player.findMany({
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      photoUrl: true,
-      age: true,
-      tribe: true,
-      eliminated: true,
+  let players: Array<{
+    id: string;
+    name: string;
+    photoUrl: string;
+    age: number | null;
+    tribe: string | null;
+    eliminated: number | null;
+    vote?: boolean | null;
+    seasons: unknown;
+    advantageLinks: Array<{ advantageID: string; status: string; advantage: { name: string } | null }>;
+    seasonsPlayed: Array<{
+      seasonLabel: string;
+      placement: number | null;
+      advantagesFound: number | null;
+      daysPlayed: number | null;
+      tribalChallengeWinPct: number | null;
+      individualImmunityWins: number;
+      individualRewardWins: number;
+    }>;
+  }> = [];
+
+  try {
+    players = await prisma.player.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        photoUrl: true,
+        age: true,
+        tribe: true,
+        eliminated: true,
+        vote: true,
+        seasons: true,
+        advantageLinks: {
+          select: {
+            advantageID: true,
+            status: true,
+            advantage: { select: { name: true } },
+          },
+        },
+        seasonsPlayed: {
+          orderBy: [{ seasonNumber: "asc" }, { seasonLabel: "asc" }],
+          select: {
+            seasonLabel: true,
+            placement: true,
+            advantagesFound: true,
+            daysPlayed: true,
+            tribalChallengeWinPct: true,
+            individualImmunityWins: true,
+            individualRewardWins: true,
+          },
+        },
+      },
+    });
+  } catch {
+    const fallback = (Array.isArray(fallbackPlayers) ? fallbackPlayers : []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      photoUrl: p.photoUrl,
+      age: p.age ?? null,
+      tribe: null,
+      eliminated: null,
       vote: true,
-      seasons: true,
-      advantageLinks: {
-        select: {
-          advantageID: true,
-          status: true,
-          advantage: { select: { name: true } },
-        },
-      },
-      seasonsPlayed: {
-        orderBy: [{ seasonNumber: "asc" }, { seasonLabel: "asc" }],
-        select: {
-          seasonLabel: true,
-          placement: true,
-          advantagesFound: true,
-          daysPlayed: true,
-          tribalChallengeWinPct: true,
-          individualImmunityWins: true,
-          individualRewardWins: true,
-        },
-      },
-    },
-  });
+      advantages: [],
+      seasons: Array.isArray(p.seasons) ? p.seasons : [],
+    }));
+    return NextResponse.json(fallback);
+  }
 
   const withSeasonFallback = players.map((player) => {
     const relationalSeasons = Array.isArray(player.seasonsPlayed)

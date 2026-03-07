@@ -29,14 +29,12 @@ type ChatMessageLookup = {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = String(searchParams.get("userId") || "");
-  if (!userId) {
-    return NextResponse.json({ error: "userId is required." }, { status: 400 });
-  }
-
-  const memberships = await prisma.membership.findMany({
-    where: { userId },
-    select: { leagueId: true },
-  });
+  const memberships = userId
+    ? await prisma.membership.findMany({
+        where: { userId },
+        select: { leagueId: true },
+      })
+    : [];
   const leagueIds = memberships.map((m) => m.leagueId);
 
   const chatPromise = (() => {
@@ -50,9 +48,11 @@ export async function GET(request: Request) {
   })();
 
   const [users, leagues, teams, allMemberships, draftStates, tribes, advantages, chatMessages] = await Promise.all([
-    prisma.user.findMany({
-      select: { id: true, email: true, displayName: true, isOwner: true },
-    }),
+    userId
+      ? prisma.user.findMany({
+          select: { id: true, email: true, displayName: true, isOwner: true },
+        })
+      : Promise.resolve([]),
     prisma.league.findMany({
       where: { id: { in: leagueIds } },
       select: { id: true, name: true, ownerUserId: true, inviteCode: true, createdAt: true, updatedAt: true },
