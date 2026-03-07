@@ -18,7 +18,7 @@ export default function Home() {
               Home
             </button>
             <button id="globalPlayersNavButton" className="secondary" type="button">
-              All Players
+              Current Survivor Standings
             </button>
           </div>
           <div id="globalLeagueNav" className="header-actions view-hidden">
@@ -39,7 +39,7 @@ export default function Home() {
                 Draft
               </button>
               <button id="allPlayersViewButton" className="secondary" type="button">
-                All Players
+                Current Survivor Standings
               </button>
               <button id="teamsViewButton" className="secondary" type="button">
                 Teams
