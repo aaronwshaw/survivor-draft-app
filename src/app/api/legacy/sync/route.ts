@@ -39,6 +39,16 @@ export async function GET(request: Request) {
   });
   const leagueIds = memberships.map((m) => m.leagueId);
 
+  const chatPromise = (() => {
+    const client = prisma as unknown as { chatMessage?: ChatMessageLookup };
+    if (!client.chatMessage?.findMany) return Promise.resolve([] as ChatMessageRow[]);
+    return client.chatMessage.findMany({
+      where: { leagueId: { in: leagueIds } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true, leagueId: true, userId: true, text: true, createdAt: true },
+    }).catch(() => [] as ChatMessageRow[]);
+  })();
+
   const [users, leagues, teams, allMemberships, draftStates, tribes, advantages, chatMessages] = await Promise.all([
     prisma.user.findMany({
       select: { id: true, email: true, displayName: true, isOwner: true },
@@ -80,11 +90,7 @@ export async function GET(request: Request) {
       orderBy: { name: "asc" },
       select: { advantageID: true, name: true, description: true },
     }),
-    (prisma as unknown as { chatMessage: ChatMessageLookup }).chatMessage.findMany({
-      where: { leagueId: { in: leagueIds } },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, leagueId: true, userId: true, text: true, createdAt: true },
-    }),
+    chatPromise,
   ]);
 
   return NextResponse.json({

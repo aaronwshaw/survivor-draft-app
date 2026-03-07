@@ -60,9 +60,11 @@ const ui = {
   loginView: document.getElementById("loginView"),
   leaguesView: document.getElementById("leaguesView"),
   leagueView: document.getElementById("leagueView"),
+  globalPlayersView: document.getElementById("globalPlayersView"),
   loginMessage: document.getElementById("loginMessage"),
   leaguesMessage: document.getElementById("leaguesMessage"),
   leagueMessage: document.getElementById("leagueMessage"),
+  playersMessage: document.getElementById("playersMessage"),
   authForm: document.getElementById("authForm"),
   authUsername: document.getElementById("authUsername"),
   authPassword: document.getElementById("authPassword"),
@@ -177,7 +179,14 @@ const ui = {
   detailsCloseBottom: document.getElementById("detailsCloseBottom"),
   topMenuToggle: document.getElementById("topMenuToggle"),
   topBarMenu: document.getElementById("topBarMenu"),
-  globalLeagueNav: document.getElementById("globalLeagueNav")
+  globalLeagueNav: document.getElementById("globalLeagueNav"),
+  globalPlayersNav: document.getElementById("globalPlayersNav"),
+  homeNavButton: document.getElementById("homeNavButton"),
+  globalPlayersNavButton: document.getElementById("globalPlayersNavButton"),
+  globalPlayersContainer: document.getElementById("globalPlayersContainer"),
+  globalPlayersDraftFilterSelect: document.getElementById("globalPlayersDraftFilterSelect"),
+  globalPlayersTribeFilterSelect: document.getElementById("globalPlayersTribeFilterSelect"),
+  globalPlayersPoolViewToggle: document.getElementById("globalPlayersPoolViewToggle")
 };
 
 function nowIso() { return new Date().toISOString(); }
@@ -286,6 +295,7 @@ function msg(view, text) {
   ui.loginMessage.textContent = view === "login" ? text : "";
   ui.leaguesMessage.textContent = view === "leagues" ? text : "";
   ui.leagueMessage.textContent = view === "league" ? text : "";
+  if (ui.playersMessage) ui.playersMessage.textContent = view === "players" ? text : "";
 }
 
 function showTeamAssignmentsMessage(text) {
@@ -756,6 +766,7 @@ function route() {
   const h = (location.hash || "#/login").replace(/^#/, "");
   const p = h.split("/").filter(Boolean);
   if (p[0] === "leagues") return { name: "leagues" };
+  if (p[0] === "players") return { name: "players" };
   if (p[0] === "league" && p[1]) return { name: "league", leagueId: p[1] };
   return { name: "login" };
 }
@@ -765,8 +776,10 @@ function go(path) { location.hash = path; }
 function toggleView(name) {
   ui.loginView.classList.toggle("view-hidden", name !== "login");
   ui.leaguesView.classList.toggle("view-hidden", name !== "leagues");
+  if (ui.globalPlayersView) ui.globalPlayersView.classList.toggle("view-hidden", name !== "players");
   ui.leagueView.classList.toggle("view-hidden", name !== "league");
   ui.globalLeagueNav.classList.toggle("view-hidden", name !== "league");
+  if (ui.globalPlayersNav) ui.globalPlayersNav.classList.toggle("view-hidden", name === "league");
   if (name !== "league") {
     ui.topBarMenu.classList.remove("open");
     document.body.classList.remove("draft-desktop-lock");
@@ -777,6 +790,15 @@ function renderAuth() {
   const user = currentUser();
   ui.logoutButton.classList.toggle("view-hidden", !user);
   ui.currentUserLabel.textContent = user ? `${user.displayName} (@${user.username || user.email})` : "";
+  if (ui.homeNavButton) {
+    ui.homeNavButton.textContent = user ? "Leagues" : "Home";
+  }
+  if (ui.homeNavButton && ui.globalPlayersNavButton) {
+    const r = route();
+    const homeActive = r.name === "login" || r.name === "leagues";
+    ui.homeNavButton.classList.toggle("active-view", homeActive);
+    ui.globalPlayersNavButton.classList.toggle("active-view", r.name === "players");
+  }
 }
 
 function leagueRows(userId) {
@@ -934,9 +956,9 @@ function updateEliminateButton(ctx, playerId) {
 }
 
 function openDetails(leagueId, playerId) {
-  const ctx = ctxForLeague(leagueId);
+  const ctx = leagueId ? ctxForLeague(leagueId) : null;
   const p = state.players.find((x) => x.id === playerId);
-  if (!ctx || !p) return;
+  if (!p) return;
   const seasonStatsBody = ui.detailsSeasonStatsBody || document.getElementById("detailsSeasonStatsBody");
   const overallStatsRow = ui.detailsOverallStatsRow || document.getElementById("detailsOverallStatsRow");
   const detailsAssignButton = ui.detailsAssignButton || document.getElementById("detailsAssignButton");
@@ -1053,7 +1075,7 @@ function openDetails(leagueId, playerId) {
   ui.advantageAssignSection.classList.toggle("view-hidden", !canManage);
   ui.detailsEliminateButton.classList.toggle("view-hidden", !canManage);
   if (detailsAssignButton) {
-    const showAssign = ctx.membership.role === "admin";
+    const showAssign = !!(ctx && ctx.membership.role === "admin");
     detailsAssignButton.classList.toggle("view-hidden", !showAssign);
     if (showAssign) {
       detailsAssignButton.disabled = !ctx.teams.some((t) => canAssignPlayer(ctx.user, ctx.membership, t));
@@ -1065,9 +1087,9 @@ function openDetails(leagueId, playerId) {
     detailsVoteButton.textContent = p.vote === false ? "No Vote" : "Has Vote";
   }
   if (detailsClaimButton) {
-    const draft = ensureDraftConfig(ctx);
-    const currentTeamId = draft.assignmentByPlayerId[playerId] || null;
-    const showClaim = draft.isDraftActive && !currentTeamId;
+    const draft = ctx ? ensureDraftConfig(ctx) : null;
+    const currentTeamId = draft ? draft.assignmentByPlayerId[playerId] || null : null;
+    const showClaim = !!(draft && draft.isDraftActive && !currentTeamId);
     detailsClaimButton.classList.toggle("view-hidden", !showClaim);
     if (showClaim) {
       detailsClaimButton.disabled = !myTeam(ctx) || !myTurn(ctx, draft);
@@ -1272,7 +1294,7 @@ function allPlayersCard(ctx, player) {
   img.className = "player-photo";
   img.src = player.photoUrl;
   img.alt = player.name;
-  img.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  img.addEventListener("click", () => openDetails(ctx?.league?.id || null, player.id));
   applyTribeBorder(img, tribe);
   wrap.appendChild(img);
   const nvBadge = noVoteBadge(player);
@@ -1346,7 +1368,7 @@ function allPlayersCard(ctx, player) {
   const d = document.createElement("button");
   d.className = "secondary";
   d.textContent = "Details";
-  d.addEventListener("click", () => openDetails(ctx.league.id, player.id));
+  d.addEventListener("click", () => openDetails(ctx?.league?.id || null, player.id));
   actions.appendChild(d);
   card.appendChild(actions);
   return card;
@@ -1859,10 +1881,13 @@ function refreshPlayerPoolControls() {
   const toggleLabel = state.playerPoolShowPhotos ? "Pictures: On" : "Pictures: Off";
   if (ui.draftFilterSelect) ui.draftFilterSelect.value = state.draftFilter;
   if (ui.allPlayersDraftFilterSelect) ui.allPlayersDraftFilterSelect.value = state.draftFilter;
+  if (ui.globalPlayersDraftFilterSelect) ui.globalPlayersDraftFilterSelect.value = state.draftFilter;
   if (ui.tribeFilterSelect) ui.tribeFilterSelect.value = state.tribeFilter;
   if (ui.allPlayersTribeFilterSelect) ui.allPlayersTribeFilterSelect.value = state.tribeFilter;
+  if (ui.globalPlayersTribeFilterSelect) ui.globalPlayersTribeFilterSelect.value = state.tribeFilter;
   if (ui.playerPoolViewToggle) ui.playerPoolViewToggle.textContent = toggleLabel;
   if (ui.allPlayersPoolViewToggle) ui.allPlayersPoolViewToggle.textContent = toggleLabel;
+  if (ui.globalPlayersPoolViewToggle) ui.globalPlayersPoolViewToggle.textContent = toggleLabel;
 }
 
 function populatePlayerPoolTribeFilters() {
@@ -1878,6 +1903,7 @@ function populatePlayerPoolTribeFilters() {
   };
   buildOptions(ui.tribeFilterSelect);
   buildOptions(ui.allPlayersTribeFilterSelect);
+  buildOptions(ui.globalPlayersTribeFilterSelect);
 }
 
 function renderLeagues() {
@@ -1904,6 +1930,31 @@ function renderLeagues() {
     item.appendChild(b);
     ui.leaguesList.appendChild(item);
   });
+}
+
+function renderGlobalPlayers() {
+  toggleView("players");
+  if (!ui.globalPlayersContainer) return;
+  ui.globalPlayersContainer.innerHTML = "";
+  populatePlayerPoolTribeFilters();
+  if (state.tribeFilter !== "all" && !(state.db.tribes || []).some((t) => t.id === state.tribeFilter)) {
+    state.tribeFilter = "all";
+  }
+  refreshPlayerPoolControls();
+  ui.globalPlayersContainer.className = state.playerPoolShowPhotos ? "players-grid photos-mode" : "players-grid list-mode";
+
+  const allFilteredPlayers = sortEliminatedLast(sortDraftPlayers(
+    state.players
+      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+  ));
+  if (allFilteredPlayers.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "empty-state";
+    empty.textContent = "No players match the selected filters.";
+    ui.globalPlayersContainer.appendChild(empty);
+    return;
+  }
+  allFilteredPlayers.forEach((player) => ui.globalPlayersContainer.appendChild(allPlayersCard(null, player)));
 }
 
 function renderTeamAssignments(ctx) {
@@ -2316,10 +2367,17 @@ function render() {
     state.pendingDraftScrollReset = true;
   }
   const user = currentUser();
-  if (!user && r.name !== "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/login"); return; }
+  if (!user && r.name !== "login" && r.name !== "players") {
+    clearLiveSync();
+    state.teamsViewTeamId = null;
+    state.isEditingTeamName = false;
+    go("#/login");
+    return;
+  }
   if (user && r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; go("#/leagues"); return; }
   if (r.name === "login") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; toggleView("login"); return; }
   if (r.name === "leagues") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; renderLeagues(); return; }
+  if (r.name === "players") { clearLiveSync(); state.teamsViewTeamId = null; state.isEditingTeamName = false; renderGlobalPlayers(); return; }
   if (r.name === "league") { renderLeague(r.leagueId); ensureLiveSync(); return; }
   clearLiveSync();
   state.teamsViewTeamId = null;
@@ -2374,6 +2432,17 @@ function wire() {
     ui.authDisplayName.focus();
   });
   ui.logoutButton.addEventListener("click", () => { signOut(); msg("", ""); go("#/login"); });
+  if (ui.homeNavButton) {
+    ui.homeNavButton.addEventListener("click", () => {
+      const user = currentUser();
+      go(user ? "#/leagues" : "#/login");
+    });
+  }
+  if (ui.globalPlayersNavButton) {
+    ui.globalPlayersNavButton.addEventListener("click", () => {
+      go("#/players");
+    });
+  }
 
   ui.createLeagueForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -2618,7 +2687,16 @@ function wire() {
       state.draftFilter =
         next === "season" || next === "placement" || next === "immunity" ? next : "alpha";
       const r = route();
-      if (r.name === "league") render();
+      if (r.name === "league" || r.name === "players") render();
+    });
+  }
+  if (ui.globalPlayersDraftFilterSelect) {
+    ui.globalPlayersDraftFilterSelect.addEventListener("change", () => {
+      const next = ui.globalPlayersDraftFilterSelect.value;
+      state.draftFilter =
+        next === "season" || next === "placement" || next === "immunity" ? next : "alpha";
+      const r = route();
+      if (r.name === "league" || r.name === "players") render();
     });
   }
   ui.tribeFilterSelect.addEventListener("change", () => {
@@ -2630,7 +2708,14 @@ function wire() {
     ui.allPlayersTribeFilterSelect.addEventListener("change", () => {
       state.tribeFilter = ui.allPlayersTribeFilterSelect.value || "all";
       const r = route();
-      if (r.name === "league") render();
+      if (r.name === "league" || r.name === "players") render();
+    });
+  }
+  if (ui.globalPlayersTribeFilterSelect) {
+    ui.globalPlayersTribeFilterSelect.addEventListener("change", () => {
+      state.tribeFilter = ui.globalPlayersTribeFilterSelect.value || "all";
+      const r = route();
+      if (r.name === "league" || r.name === "players") render();
     });
   }
   if (ui.playerPoolViewToggle) {
@@ -2644,7 +2729,14 @@ function wire() {
     ui.allPlayersPoolViewToggle.addEventListener("click", () => {
       state.playerPoolShowPhotos = !state.playerPoolShowPhotos;
       const r = route();
-      if (r.name === "league") render();
+      if (r.name === "league" || r.name === "players") render();
+    });
+  }
+  if (ui.globalPlayersPoolViewToggle) {
+    ui.globalPlayersPoolViewToggle.addEventListener("click", () => {
+      state.playerPoolShowPhotos = !state.playerPoolShowPhotos;
+      const r = route();
+      if (r.name === "league" || r.name === "players") render();
     });
   }
   ui.addTeamButton.addEventListener("click", async () => {

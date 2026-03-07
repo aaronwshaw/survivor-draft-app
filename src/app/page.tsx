@@ -13,6 +13,14 @@ export default function Home() {
           </span>
         </button>
         <div id="topBarMenu" className="top-bar-menu">
+          <div id="globalPlayersNav" className="header-actions">
+            <button id="homeNavButton" className="secondary" type="button">
+              Home
+            </button>
+            <button id="globalPlayersNavButton" className="secondary" type="button">
+              All Players
+            </button>
+          </div>
           <div id="globalLeagueNav" className="header-actions view-hidden">
             <button id="backToLeaguesButton" className="secondary" type="button">
               Back to Leagues
@@ -147,6 +155,36 @@ export default function Home() {
             </section>
           </div>
           <p id="leaguesMessage" className="message" />
+        </section>
+
+        <section id="globalPlayersView" className="page-view view-hidden" aria-labelledby="globalPlayersTitle">
+          <section className="card">
+            <div className="panel-head">
+              <h3 id="globalPlayersTitle">All Players</h3>
+              <div className="filters-inline">
+                <label className="inline-filter" htmlFor="globalPlayersDraftFilterSelect">
+                  Sort
+                  <select id="globalPlayersDraftFilterSelect">
+                    <option value="alpha">Alphabetical</option>
+                    <option value="season">First Season</option>
+                    <option value="placement">Highest Placement</option>
+                    <option value="immunity">Individual Immunities</option>
+                  </select>
+                </label>
+                <label className="inline-filter" htmlFor="globalPlayersTribeFilterSelect">
+                  Tribe
+                  <select id="globalPlayersTribeFilterSelect">
+                    <option value="all">All Tribes</option>
+                  </select>
+                </label>
+                <button id="globalPlayersPoolViewToggle" type="button" className="secondary pool-view-toggle">
+                  Pictures: Off
+                </button>
+              </div>
+            </div>
+            <div id="globalPlayersContainer" className="players-grid" />
+          </section>
+          <p id="playersMessage" className="message" />
         </section>
 
         <section id="leagueView" className="page-view view-hidden" aria-labelledby="leagueTitle">
