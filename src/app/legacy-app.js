@@ -2296,8 +2296,8 @@ function renderLeague(leagueId) {
   const allAssigned = activePlayers.length > 0 && activePlayers.every((player) => !!draft.assignmentByPlayerId[player.id]);
   if (!isAdmin && state.currentSubview === "order") state.currentSubview = "draft";
   if (!isOwner && state.currentSubview === "survivor") state.currentSubview = "draft";
-  if (allAssigned && !isAdmin && state.currentSubview === "draft") state.currentSubview = "teams";
-  ui.draftViewButton.classList.toggle("view-hidden", allAssigned && !isAdmin);
+  if (allAssigned && state.currentSubview === "draft") state.currentSubview = "teams";
+  ui.draftViewButton.classList.toggle("view-hidden", allAssigned);
   ui.draftOrderNavButton.classList.toggle("view-hidden", !isAdmin);
   ui.survivorMgmtViewButton.classList.toggle("view-hidden", !isOwner);
   renderDraftOrderCard(ctx, draft);
