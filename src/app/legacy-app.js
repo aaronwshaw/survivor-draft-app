@@ -1876,6 +1876,12 @@ function sortEliminatedLast(players) {
   return [...active, ...eliminated];
 }
 
+function matchesCurrentTribeFilter(player) {
+  if (state.tribeFilter === "all") return true;
+  if ((Number(player?.eliminated) || 0) > 0) return false;
+  return (player?.tribe || "") === state.tribeFilter;
+}
+
 function refreshPlayerPoolControls() {
   const toggleLabel = state.playerPoolShowPhotos ? "Pictures: On" : "Pictures: Off";
   if (ui.draftFilterSelect) ui.draftFilterSelect.value = state.draftFilter;
@@ -1951,7 +1957,7 @@ function renderGlobalPlayers() {
 
   const allFilteredPlayers = sortEliminatedLast(sortDraftPlayers(
     state.players
-      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+      .filter((p) => matchesCurrentTribeFilter(p)),
   ));
   if (allFilteredPlayers.length === 0) {
     const empty = document.createElement("p");
@@ -2329,7 +2335,7 @@ function renderLeague(leagueId) {
     state.players
       .filter((p) => !draft.assignmentByPlayerId[p.id])
       .filter((p) => (Number(p?.eliminated) || 0) === 0)
-      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+      .filter((p) => matchesCurrentTribeFilter(p)),
   );
   if (unassignedPlayers.length === 0) {
     const empty = document.createElement("p");
@@ -2341,7 +2347,7 @@ function renderLeague(leagueId) {
   }
   const allFilteredPlayers = sortEliminatedLast(sortDraftPlayers(
     state.players
-      .filter((p) => state.tribeFilter === "all" || (p.tribe || "") === state.tribeFilter),
+      .filter((p) => matchesCurrentTribeFilter(p)),
   ));
   if (allFilteredPlayers.length === 0) {
     const empty = document.createElement("p");
