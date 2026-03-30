@@ -208,6 +208,35 @@ function normalizeAdvantageAssignments(rawAdvantages) {
     })
     .filter(Boolean);
 }
+
+function advantageNameMap() {
+  return new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
+}
+
+function summarizeAdvantages(rawAdvantages, status) {
+  const counts = new Map();
+  normalizeAdvantageAssignments(rawAdvantages).forEach((entry) => {
+    if (status && entry.status !== status) return;
+    counts.set(entry.advantageID, (counts.get(entry.advantageID) || 0) + 1);
+  });
+  const names = advantageNameMap();
+  return Array.from(counts.entries()).map(([advantageID, count]) => {
+    const name = names.get(advantageID) || advantageID;
+    return count > 1 ? `${name} x${count}` : name;
+  });
+}
+
+function countAdvantagesByStatus(rawAdvantages) {
+  const counts = new Map();
+  normalizeAdvantageAssignments(rawAdvantages).forEach((entry) => {
+    const current = counts.get(entry.advantageID) || { HOLDS: 0, USED: 0 };
+    if (entry.status === "USED") current.USED += 1;
+    else current.HOLDS += 1;
+    counts.set(entry.advantageID, current);
+  });
+  return counts;
+}
+
 const EMPTY_DB = { users: [], leagues: [], teams: [], memberships: [], draftStates: [], tribes: [], advantages: [], chatMessages: [] };
 
 function isMobileLayout() {
@@ -887,8 +916,7 @@ function advantageBadge(player) {
   const assignments = normalizeAdvantageAssignments(player?.advantages);
   const held = assignments.filter((entry) => entry.status === "HOLDS");
   if (!held.length) return null;
-  const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
-  const names = held.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+  const names = summarizeAdvantages(held, "HOLDS");
   const b = document.createElement("span");
   b.className = "advantage-badge";
   b.textContent = "A";
@@ -964,9 +992,7 @@ function openDetails(leagueId, playerId) {
   const detailsVoteButton = ui.detailsVoteButton || document.getElementById("detailsVoteButton");
   const detailsClaimButton = ui.detailsClaimButton || document.getElementById("detailsClaimButton");
   const assignedAdvantages = normalizeAdvantageAssignments(p.advantages);
-  const statusByAdvantageId = Object.fromEntries(
-    assignedAdvantages.map((entry) => [entry.advantageID, entry.status]),
-  );
+  const advantageCounts = countAdvantagesByStatus(assignedAdvantages);
   if (!seasonStatsBody || !overallStatsRow) return;
   const overallTable = overallStatsRow.closest("table");
   if (overallTable) {
@@ -978,13 +1004,8 @@ function openDetails(leagueId, playerId) {
   const tribe = tribeForId(p.tribe);
   const canManage = canManageSurvivor(ctx);
   state.detailsTargetPlayerId = playerId;
-  const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
-  const holds = assignedAdvantages
-    .filter((entry) => entry.status === "HOLDS")
-    .map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
-  const used = assignedAdvantages
-    .filter((entry) => entry.status === "USED")
-    .map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+  const holds = summarizeAdvantages(assignedAdvantages, "HOLDS");
+  const used = summarizeAdvantages(assignedAdvantages, "USED");
   ui.detailsPhoto.src = p.photoUrl;
   ui.detailsPhoto.alt = p.name;
   ui.detailsName.textContent = p.name;
@@ -1119,37 +1140,29 @@ function openDetails(leagueId, playerId) {
 
       const controls = document.createElement("div");
       controls.className = "advantage-status-controls";
-      const groupName = `adv-status-${adv.advantageID}`;
+      const counts = advantageCounts.get(adv.advantageID) || { HOLDS: 0, USED: 0 };
 
       const holdsLabel = document.createElement("label");
+      holdsLabel.className = "advantage-count-field";
+      holdsLabel.append("Holds");
       const holdsInput = document.createElement("input");
-      holdsInput.type = "radio";
-      holdsInput.name = groupName;
-      holdsInput.value = "HOLDS";
-      holdsInput.checked = statusByAdvantageId[adv.advantageID] === "HOLDS";
-      holdsInput.addEventListener("mousedown", () => {
-        holdsInput.dataset.wasChecked = holdsInput.checked ? "1" : "0";
-      });
-      holdsInput.addEventListener("click", () => {
-        if (holdsInput.dataset.wasChecked === "1") holdsInput.checked = false;
-      });
+      holdsInput.type = "number";
+      holdsInput.min = "0";
+      holdsInput.step = "1";
+      holdsInput.value = String(counts.HOLDS || 0);
+      holdsInput.setAttribute("data-status", "HOLDS");
       holdsLabel.appendChild(holdsInput);
-      holdsLabel.append(" Holds");
 
       const usedLabel = document.createElement("label");
+      usedLabel.className = "advantage-count-field";
+      usedLabel.append("Used");
       const usedInput = document.createElement("input");
-      usedInput.type = "radio";
-      usedInput.name = groupName;
-      usedInput.value = "USED";
-      usedInput.checked = statusByAdvantageId[adv.advantageID] === "USED";
-      usedInput.addEventListener("mousedown", () => {
-        usedInput.dataset.wasChecked = usedInput.checked ? "1" : "0";
-      });
-      usedInput.addEventListener("click", () => {
-        if (usedInput.dataset.wasChecked === "1") usedInput.checked = false;
-      });
+      usedInput.type = "number";
+      usedInput.min = "0";
+      usedInput.step = "1";
+      usedInput.value = String(counts.USED || 0);
+      usedInput.setAttribute("data-status", "USED");
       usedLabel.appendChild(usedInput);
-      usedLabel.append(" Used");
 
       controls.appendChild(holdsLabel);
       controls.appendChild(usedLabel);
@@ -1323,8 +1336,7 @@ function allPlayersCard(ctx, player) {
   const heldAdvantages = normalizeAdvantageAssignments(player?.advantages)
     .filter((entry) => entry.status === "HOLDS");
   if (heldAdvantages.length) {
-    const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
-    const advNames = heldAdvantages.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+    const advNames = summarizeAdvantages(heldAdvantages, "HOLDS");
     const advBadge = document.createElement("span");
     advBadge.className = "team-list-badge team-list-badge-advantage";
     advBadge.textContent = "A";
@@ -1513,8 +1525,7 @@ function teamListCard(ctx, team) {
       const heldAdvantages = normalizeAdvantageAssignments(player?.advantages)
         .filter((entry) => entry.status === "HOLDS");
       if (heldAdvantages.length) {
-        const advantageMap = new Map((state.db.advantages || []).map((adv) => [adv.advantageID, adv.name]));
-        const advNames = heldAdvantages.map((entry) => advantageMap.get(entry.advantageID) || entry.advantageID);
+        const advNames = summarizeAdvantages(heldAdvantages, "HOLDS");
         const advBadge = document.createElement("span");
         advBadge.className = "team-list-badge team-list-badge-advantage";
         advBadge.textContent = "A";
@@ -2965,11 +2976,17 @@ function wire() {
         const player = state.players.find((entry) => entry.id === state.detailsTargetPlayerId);
         const eliminated = Number(player?.eliminated) > 0 ? Number(player.eliminated) : null;
         const advantages = Array.from(ui.advantageStatusList.querySelectorAll(".advantage-status-row"))
-          .map((row) => {
+          .flatMap((row) => {
             const advantageID = String(row.getAttribute("data-advantage-id") || "");
-            const selected = row.querySelector("input[type=\"radio\"]:checked");
-            if (!advantageID || !selected) return null;
-            return { advantageID, status: selected.value === "USED" ? "USED" : "HOLDS" };
+            if (!advantageID) return [];
+            const holdsInput = row.querySelector('input[data-status="HOLDS"]');
+            const usedInput = row.querySelector('input[data-status="USED"]');
+            const holdsCount = Math.max(0, Math.floor(Number(holdsInput?.value) || 0));
+            const usedCount = Math.max(0, Math.floor(Number(usedInput?.value) || 0));
+            const next = [];
+            for (let i = 0; i < holdsCount; i += 1) next.push({ advantageID, status: "HOLDS" });
+            for (let i = 0; i < usedCount; i += 1) next.push({ advantageID, status: "USED" });
+            return next;
           })
           .filter(Boolean);
         await updatePlayerSurvivorState(

@@ -94,14 +94,15 @@ export async function POST(request: Request) {
     if (advantages != null) {
       await tx.advantagePlayer.deleteMany({ where: { playerId } });
       if (advantages.length > 0) {
-        await tx.advantagePlayer.createMany({
-          data: advantages.map((entry) => ({
-            playerId,
-            advantageID: entry.advantageID,
-            status: entry.status,
-          })),
-          skipDuplicates: true,
-        });
+        for (const entry of advantages) {
+          await tx.advantagePlayer.create({
+            data: {
+              playerId,
+              advantageID: entry.advantageID,
+              status: entry.status,
+            },
+          });
+        }
       }
     }
 

@@ -464,11 +464,11 @@ export default function Home() {
               <div id="advantageAssignPanel" className="tribe-assign-panel view-hidden">
                 <div className="form-grid">
                   <label>
-                    Advantage Status
+                    Advantage Counts
                     <div id="advantageStatusList" className="advantage-status-list" />
                   </label>
                   <button id="saveAdvantageButton" type="button" className="secondary">
-                    Save Advantage
+                    Save Advantages
                   </button>
                 </div>
               </div>
